@@ -96,11 +96,19 @@ export function Login({ onDone }: { onDone: () => void }) {
   const c = copy[step]
   return (
     <div className="scroll login">
-      <div className="logo" aria-hidden>
-        <span />
-        <span />
-        <span />
-      </div>
+      <svg className="logo" viewBox="0 0 100 100" aria-hidden>
+        <defs>
+          <linearGradient id="logo-g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ffa45c" />
+            <stop offset="1" stopColor="#ff6b81" />
+          </linearGradient>
+        </defs>
+        <g transform="rotate(-45 50 50)" fill="none" stroke="url(#logo-g)" strokeWidth="8" strokeLinecap="round">
+          <path d="M8 50a42 42 0 0 1 84 0" />
+          <path d="M23 50a27 27 0 0 1 54 0" opacity="0.78" />
+          <circle cx="50" cy="50" r="12" fill="url(#logo-g)" stroke="none" />
+        </g>
+      </svg>
       <h1 className="brand">Onde</h1>
       {notice && <p className="notice">{notice}</p>}
       <form onSubmit={submit} className="card">
