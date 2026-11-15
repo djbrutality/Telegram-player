@@ -1,13 +1,17 @@
 import type { Track } from './types'
+import { getOverride } from './userdata'
 
+/** Titre affiché : correction manuelle, sinon métadonnée, sinon nom du fichier. */
 export function trackTitle(t: Track): string {
+  const fixed = getOverride(t.key)?.title
+  if (fixed) return fixed
   if (t.title?.trim()) return t.title.trim()
   if (t.fileName) return t.fileName.replace(/\.[a-z0-9]{2,5}$/i, '')
   return 'Sans titre'
 }
 
 export function trackArtist(t: Track): string {
-  return t.performer?.trim() || 'Artiste inconnu'
+  return getOverride(t.key)?.performer || t.performer?.trim() || 'Artiste inconnu'
 }
 
 export function formatTime(seconds: number): string {
@@ -33,3 +37,8 @@ export function hueOf(text: string): number {
 }
 
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+/** Texte simplifié pour la recherche : minuscules, sans accents. */
+export function fold(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}

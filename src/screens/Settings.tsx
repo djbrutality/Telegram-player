@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Icon } from '../components/Icon'
-import { wipeEverything } from '../lib/db'
+import { applyBackup, findBackup, runBackup, useBackup } from '../lib/backup'
+import { getSelectedChats, wipeEverything } from '../lib/db'
 import type { PlaybackMode } from '../lib/types'
 import { streamAvailable } from '../player/stream'
 import { audio } from '../player/player'
-import { setPlaybackMode, useApp } from '../store'
+import { bumpLibrary, setPlaybackMode, toast, useApp } from '../store'
 import { logoutRemote } from '../tg/client'
-import { reindexAll, stopIndexing } from '../tg/indexer'
+import { reindexAll, startIndexing, stopIndexing } from '../tg/indexer'
 
 const modes: { id: PlaybackMode; label: string }[] = [
   { id: 'auto', label: 'Auto' },
@@ -35,6 +36,43 @@ export function Settings({ onBack, onEditChats }: { onBack: () => void; onEditCh
     }
     location.reload()
   }
+
+  const backup = useBackup()
+  const [restoring, setRestoring] = useState(false)
+
+  const saveNow = async () => {
+    if (net !== 'online') return toast('Hors ligne : sauvegarde impossible')
+    toast((await runBackup()) ? 'Sauvegarde envoyée' : 'Échec de la sauvegarde')
+  }
+
+  const restore = async () => {
+    setRestoring(true)
+    try {
+      const found = await findBackup()
+      if (!found) return toast('Aucune sauvegarde trouvée')
+      const date = new Date(found.savedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+      if (!confirm(`Restaurer la sauvegarde du ${date} ? Vos groupes choisis, favoris, playlists et corrections actuels seront remplacés.`)) return
+      stopIndexing()
+      await applyBackup(found)
+      useApp.setState({ chats: await getSelectedChats() })
+      bumpLibrary(true)
+      startIndexing()
+      toast('Sauvegarde restaurée')
+    } catch {
+      toast('Restauration impossible')
+    } finally {
+      setRestoring(false)
+    }
+  }
+
+  const backupLabel =
+    backup.status === 'saving'
+      ? 'Envoi en cours…'
+      : backup.status === 'error'
+        ? (backup.error ?? 'Échec')
+        : backup.last
+          ? `Dernière : ${new Date(backup.last).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+          : 'Jamais effectuée'
 
   const reindex = () => {
     if (confirm('Effacer l’index local et reparcourir tous les groupes ?')) void reindexAll()
@@ -68,6 +106,21 @@ export function Settings({ onBack, onEditChats }: { onBack: () => void; onEditCh
         </button>
       </div>
 
+      <h2 className="section">Sauvegarde</h2>
+      <div className="group">
+        <button className="setting" onClick={saveNow} disabled={backup.status === 'saving'}>
+          <span>Sauvegarder maintenant</span>
+          <span className={`muted small${backup.status === 'error' ? ' err' : ''}`}>{backupLabel}</span>
+        </button>
+        <button className="setting" onClick={restore} disabled={restoring}>
+          <span>{restoring ? 'Recherche…' : 'Restaurer la dernière sauvegarde'}</span>
+        </button>
+      </div>
+      <p className="muted small pad note">
+        Vos groupes choisis, favoris, playlists et corrections sont copiés automatiquement dans vos « Messages enregistrés » Telegram, sous
+        la forme d’un fichier onde-sauvegarde.json.
+      </p>
+
       <h2 className="section">Lecture</h2>
       <div className="group">
         <div className="setting col">
@@ -92,7 +145,7 @@ export function Settings({ onBack, onEditChats }: { onBack: () => void; onEditCh
           <span>{busy ? 'Déconnexion…' : 'Se déconnecter et tout effacer'}</span>
         </button>
       </div>
-      <p className="muted small center pad">Onde · étape 2</p>
+      <p className="muted small center pad">Onde · étape 3</p>
     </div>
   )
 }

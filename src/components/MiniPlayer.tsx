@@ -1,11 +1,13 @@
 import { trackArtist, trackTitle } from '../lib/format'
 import { next, toggle, usePlayer } from '../player/player'
+import { useUser } from '../lib/userdata'
 import { useUi } from '../store'
 import { Cover } from './Cover'
 import { Icon } from './Icon'
 
 /** Barre de lecture fixe, au-dessus de la barre de navigation. Un toucher ouvre le lecteur complet. */
 export function MiniPlayer() {
+  useUser((s) => s.metaVersion)
   const current = usePlayer((s) => s.current)
   const playing = usePlayer((s) => s.playing)
   const loading = usePlayer((s) => s.loading)

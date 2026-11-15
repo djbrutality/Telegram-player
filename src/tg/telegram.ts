@@ -1,6 +1,7 @@
 // Implémentation réelle : appels à l'API Telegram.
 import { Api } from 'telegram'
 import { FileMigrateError } from 'telegram/errors'
+import { generateRandomLong } from 'telegram/Helpers'
 import bigInt from 'big-integer'
 import type { Buffer as BufferType } from 'buffer'
 import type { ChatInfo, Track } from '../lib/types'
@@ -126,7 +127,96 @@ async function getFileSafe(track: Track, offset: number, limit: number, thumbSiz
   })
 }
 
+// ---------- Sauvegarde dans « Messages enregistrés » ----------
+
+const BACKUP_TAG = '#onde_sauvegarde'
+const BACKUP_NAME = 'onde-sauvegarde.json'
+
+/** Messages de sauvegarde existants, du plus récent au plus ancien. */
+async function findBackupMessages(): Promise<Api.Message[]> {
+  const c = await ready()
+  const res = await call(() =>
+    c.invoke(
+      new Api.messages.Search({
+        peer: new Api.InputPeerSelf(),
+        q: BACKUP_TAG,
+        filter: new Api.InputMessagesFilterDocument(),
+        minDate: 0,
+        maxDate: 0,
+        offsetId: 0,
+        addOffset: 0,
+        limit: 20,
+        maxId: 0,
+        minId: 0,
+        hash: bigInt(0),
+      }),
+    ),
+  )
+  if (res instanceof Api.messages.MessagesNotModified) return []
+  return res.messages
+    .filter((m): m is Api.Message => m instanceof Api.Message && m.media instanceof Api.MessageMediaDocument)
+    .sort((a, b) => b.id - a.id)
+}
+
+async function saveBackup(json: string) {
+  const c = await ready()
+  const bytes = new TextEncoder().encode(json)
+  const PART = 256 * 1024
+  const parts = Math.max(1, Math.ceil(bytes.length / PART))
+  const fileId = generateRandomLong()
+  for (let i = 0; i < parts; i++) {
+    const chunk = Buffer.from(bytes.subarray(i * PART, (i + 1) * PART))
+    await call(() => c.invoke(new Api.upload.SaveFilePart({ fileId, filePart: i, bytes: chunk })))
+  }
+  const previous = await findBackupMessages()
+  await call(() =>
+    c.invoke(
+      new Api.messages.SendMedia({
+        peer: new Api.InputPeerSelf(),
+        media: new Api.InputMediaUploadedDocument({
+          file: new Api.InputFile({ id: fileId, parts, name: BACKUP_NAME, md5Checksum: '' }),
+          mimeType: 'application/json',
+          attributes: [new Api.DocumentAttributeFilename({ fileName: BACKUP_NAME })],
+          forceFile: true,
+        }),
+        message: `${BACKUP_TAG} — Sauvegarde automatique de l’appli Onde. Ne pas supprimer.`,
+        randomId: generateRandomLong(),
+        silent: true,
+      }),
+    ),
+  )
+  // La nouvelle sauvegarde est en place : on retire les anciennes.
+  if (previous.length) {
+    await call(() => c.invoke(new Api.messages.DeleteMessages({ id: previous.map((m) => m.id), revoke: true }))).catch(() => {})
+  }
+}
+
+async function loadBackup(): Promise<{ json: string; date: number } | null> {
+  const [msg] = await findBackupMessages()
+  const doc = msg?.media instanceof Api.MessageMediaDocument ? msg.media.document : undefined
+  if (!msg || !(doc instanceof Api.Document)) return null
+  const size = doc.size.toJSNumber()
+  if (size > 20 * 1024 * 1024) return null
+  const c = await ready()
+  const CHUNK = 512 * 1024
+  const out = new Uint8Array(size)
+  for (let offset = 0; offset < size; offset += CHUNK) {
+    const request = new Api.upload.GetFile({
+      location: new Api.InputDocumentFileLocation({ id: doc.id, accessHash: doc.accessHash, fileReference: doc.fileReference, thumbSize: '' }),
+      offset: bigInt(offset),
+      limit: CHUNK,
+    })
+    const res = await call(async () => c.invokeWithSender(request, await c.getSender(doc.dcId)))
+    if (!(res instanceof Api.upload.File)) throw new Error('Sauvegarde illisible')
+    out.set(new Uint8Array(res.bytes).subarray(0, size - offset), offset)
+  }
+  return { json: new TextDecoder().decode(out), date: msg.date }
+}
+
 export const telegramBackend: Backend = {
+  saveBackup,
+  loadBackup,
+
   async listChats() {
     const c = await ready()
     const dialogs = await call(() => c.getDialogs({}))

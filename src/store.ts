@@ -11,7 +11,7 @@ export interface ChatProgress {
 }
 
 interface AppState {
-  phase: 'boot' | 'login' | 'pick' | 'main'
+  phase: 'boot' | 'login' | 'restore' | 'pick' | 'main'
   loginNotice: string | null
   me: { name: string } | null
   /** 'connecting' | 'online' | 'offline' */
@@ -70,10 +70,24 @@ interface UiState {
   playerOpen: boolean
   /** morceau dont le menu d'actions est affiché */
   menuTrack: Track | null
+  /** playlist depuis laquelle le menu a été ouvert (pour « Retirer de la playlist ») */
+  menuPlaylist: string | null
+  /** petite fenêtre de saisie */
+  dialog: DialogSpec | null
   /** court message affiché en bas de l'écran */
   toast: string | null
 }
-export const useUi = create<UiState>(() => ({ playerOpen: false, menuTrack: null, toast: null }))
+export interface DialogSpec {
+  title: string
+  fields: { label: string; value: string; placeholder?: string }[]
+  confirm: string
+  onSubmit: (values: string[]) => void
+}
+export const useUi = create<UiState>(() => ({ playerOpen: false, menuTrack: null, menuPlaylist: null, dialog: null, toast: null }))
+
+export function openMenu(track: Track, playlistId: string | null = null) {
+  useUi.setState({ menuTrack: track, menuPlaylist: playlistId })
+}
 
 let toastTimer: number | undefined
 export function toast(message: string) {

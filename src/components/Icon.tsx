@@ -16,6 +16,9 @@ const paths: Record<string, string> = {
   repeat: 'M17 3.5 20 6.500l-3 3M4 11.500v-1a4 4 0 0 1 4-4h12M7 20.500l-3-3 3-3M20 12.500v1a4 4 0 0 1-4 4H4',
   playnext: 'M4 6.500h11M4 12h7M4 17.500h7M15 11v8l6-4-6-4Z',
   plus: 'M12 5v14M5 12h14',
+  edit: 'M4 20h4L19 9l-4-4L4 16v4Zm9.5-13.5 4 4',
+  trash: 'M5 7h14M10 7V4.5h4V7m-7 0 .8 12.5h8.4L17 7',
+  list: 'M4 6.5h16M4 12h16M4 17.5h10',
   music: 'M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm10-2a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z',
 }
 
@@ -24,6 +27,13 @@ export function Icon({ name, size = 24 }: { name: string; size?: number }) {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
         {name === 'play' ? <path d="M7 4.500v15a1 1 0 0 0 1.5.86l12.5-7.500a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.500Z" /> : <path d="M6 4h4.500v16H6zM13.5 4H18v16h-4.500z" />}
+      </svg>
+    )
+  }
+  if (name === 'heart-full') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <path d={paths.heart} />
       </svg>
     )
   }
