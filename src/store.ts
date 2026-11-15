@@ -1,6 +1,6 @@
 // État global de l'application (hors lecteur audio).
 import { create } from 'zustand'
-import type { ChatInfo, PlaybackMode } from './lib/types'
+import type { ChatInfo, PlaybackMode, Track } from './lib/types'
 
 export interface ChatProgress {
   count: number
@@ -62,4 +62,22 @@ export function bumpLibrary(now = false) {
 export function setPlaybackMode(mode: PlaybackMode) {
   localStorage.setItem('onde.playbackMode', mode)
   useApp.setState({ playbackMode: mode })
+}
+
+// --- Petits états d'interface ---
+interface UiState {
+  /** lecteur plein écran ouvert ? */
+  playerOpen: boolean
+  /** morceau dont le menu d'actions est affiché */
+  menuTrack: Track | null
+  /** court message affiché en bas de l'écran */
+  toast: string | null
+}
+export const useUi = create<UiState>(() => ({ playerOpen: false, menuTrack: null, toast: null }))
+
+let toastTimer: number | undefined
+export function toast(message: string) {
+  clearTimeout(toastTimer)
+  useUi.setState({ toast: message })
+  toastTimer = window.setTimeout(() => useUi.setState({ toast: null }), 2200)
 }

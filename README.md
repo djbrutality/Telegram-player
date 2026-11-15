@@ -8,9 +8,10 @@ Onde est une web app (PWA) personnelle : elle lit les fichiers audio partagés d
   ils restent sur le téléphone.
 - Hébergement gratuit sur GitHub Pages.
 
-> **Avancement** — Étape 1 terminée : connexion, choix des groupes, indexation,
-> lecture d'un morceau. Les étapes suivantes (lecteur complet, recherche, favoris,
-> playlists, sauvegarde, hors ligne) arrivent ensuite.
+> **Avancement** — Étapes 1 et 2 terminées : connexion, choix des groupes, indexation,
+> lecteur complet (file d'attente, aléatoire, répétition), préchargement du morceau
+> suivant, commandes sur l'écran verrouillé et reprise de lecture. Restent la recherche,
+> les favoris, les playlists, la sauvegarde (étape 3) et le hors ligne (étape 4).
 
 ---
 
@@ -95,6 +96,7 @@ Vous la retrouverez dans Telegram → Réglages → Appareils.
 | Un morceau ne démarre pas | Réglages → Mode de lecture → **Complet** (télécharge le morceau entier avant de le lire). |
 | « Format audio non pris en charge » | Safari ne sait pas lire ce format (certains fichiers anciens ou exotiques). |
 | Bandeau « Telegram demande une pause » | Normal sur les gros groupes : l'indexation reprend toute seule. |
+| La musique s'arrête écran verrouillé | Laissez l'appli ouverte au premier plan quelques secondes après le début d'un morceau (le temps du préchargement), puis verrouillez. Si cela persiste, essayez le mode **Complet**. |
 | L'appli ne se met pas à jour | Fermez-la complètement (balayez-la vers le haut) puis rouvrez-la. |
 
 ## Pour les curieux : la technique

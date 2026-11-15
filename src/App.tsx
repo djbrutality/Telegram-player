@@ -3,14 +3,18 @@ import { MiniPlayer } from './components/MiniPlayer'
 import { NavBar, type Tab } from './components/NavBar'
 import { getAllIndexStates, getSelectedChats, setSelectedChats } from './lib/db'
 import type { ChatInfo } from './lib/types'
+import { initMediaSession } from './player/mediaSession'
+import { restorePlayer } from './player/player'
 import { initStreaming } from './player/stream'
+import { TrackMenu } from './components/TrackMenu'
+import { Player } from './screens/Player'
 import { ChatPicker } from './screens/ChatPicker'
 import { GroupView } from './screens/GroupView'
 import { Groups } from './screens/Groups'
 import { Home } from './screens/Home'
 import { Login } from './screens/Login'
 import { Settings } from './screens/Settings'
-import { bumpLibrary, setProgress, useApp } from './store'
+import { bumpLibrary, setProgress, useApp, useUi } from './store'
 import { connect, getMyName, hasSession, isDemo } from './tg/client'
 import { startIndexing, stopIndexing } from './tg/indexer'
 
@@ -46,6 +50,8 @@ async function boot() {
   for (const s of await getAllIndexStates()) {
     setProgress(s.chatId, { count: s.count, total: s.total, complete: s.complete })
   }
+  await restorePlayer()
+  initMediaSession()
   useApp.setState({ chats, phase: chats.length ? 'main' : 'pick' })
   void goOnline()
 }
@@ -69,6 +75,11 @@ function FloodBanner() {
   const left = Math.ceil((until - Date.now()) / 1000)
   if (!until || left <= 0) return null
   return <div className="banner">Telegram demande une pause : reprise dans {left} s</div>
+}
+
+function Toast() {
+  const message = useUi((s) => s.toast)
+  return message ? <div className="toast">{message}</div> : null
 }
 
 export function App() {
@@ -156,9 +167,13 @@ export function App() {
       {net === 'offline' && <div className="banner quiet">Hors ligne — nouvelle tentative au retour du réseau</div>}
       {screen}
       <MiniPlayer />
+      <Player />
+      <TrackMenu />
+      <Toast />
       <NavBar
         tab={tab}
         onChange={(t) => {
+          useUi.setState({ playerOpen: false })
           setOverlay(null)
           if (t === tab) setOpenChat(null)
           setTab(t)

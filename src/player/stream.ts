@@ -21,8 +21,14 @@ export function registerTrack(track: Track) {
 /** Morceaux à ne pas retirer de la mémoire (en cours et suivant). */
 export function protect(keys: string[]) {
   protectedKeys = new Set(keys)
-  for (const k of [...fullBlobs.keys()]) if (!protectedKeys.has(k) && fullBlobs.size > 2) fullBlobs.delete(k)
+  // On garde les morceaux protégés, plus le dernier téléchargé (utile pour « précédent »).
+  const loose = [...fullBlobs.keys()].filter((k) => !protectedKeys.has(k))
+  for (const k of loose.slice(0, -1)) fullBlobs.delete(k)
   evict()
+}
+
+export function fullBlob(key: string) {
+  return fullBlobs.get(key)
 }
 
 export function normalizeMime(track: Track): string {

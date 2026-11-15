@@ -34,7 +34,7 @@ export function GroupView({ chatId, onBack }: { chatId: string; onBack: () => vo
           items={tracks}
           rowHeight={ROW_HEIGHT}
           render={(t, i) => (
-            <TrackRow key={t.key} track={t} active={t.key === currentKey} playing={playing} onPlay={() => playList(tracks, i)} />
+            <TrackRow key={t.key} track={t} active={t.key === currentKey} playing={playing} onPlay={() => playList(tracks, i, chat?.title ?? null)} />
           )}
         />
       )}
