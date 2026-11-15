@@ -97,4 +97,12 @@ export const demoBackend: Backend = {
     g.beginPath(); g.arc(80, 80, 34, 0, 7); g.fill()
     return new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.8))
   },
+  async saveBackup(json) {
+    await sleep(400)
+    sessionStorage.setItem('demo.backup', JSON.stringify({ json, date: Math.floor(Date.now() / 1000) }))
+  },
+  async loadBackup() {
+    await sleep(300)
+    return JSON.parse(sessionStorage.getItem('demo.backup') || 'null')
+  },
 }

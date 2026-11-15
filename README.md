@@ -8,10 +8,10 @@ Onde est une web app (PWA) personnelle : elle lit les fichiers audio partagés d
   ils restent sur le téléphone.
 - Hébergement gratuit sur GitHub Pages.
 
-> **Avancement** — Étapes 1 et 2 terminées : connexion, choix des groupes, indexation,
-> lecteur complet (file d'attente, aléatoire, répétition), préchargement du morceau
-> suivant, commandes sur l'écran verrouillé et reprise de lecture. Restent la recherche,
-> les favoris, les playlists, la sauvegarde (étape 3) et le hors ligne (étape 4).
+> **Avancement** — Étapes 1 à 3 terminées : connexion, choix des groupes, indexation,
+> lecteur complet, écran verrouillé, reprise de lecture, recherche, favoris, playlists,
+> correction des titres et sauvegarde dans les Messages enregistrés. Reste l'écoute
+> hors ligne et les finitions (étape 4).
 
 ---
 
@@ -75,6 +75,18 @@ problème : le code ne contient aucun identifiant ni aucune donnée personnelle.
 
 Telegram vous signalera une « nouvelle connexion » : c'est normal, c'est Onde.
 Vous la retrouverez dans Telegram → Réglages → Appareils.
+
+## Sauvegarde
+
+Vos groupes choisis, favoris, playlists et corrections de titres sont copiés
+automatiquement dans vos **Messages enregistrés** Telegram, dans un fichier
+`onde-sauvegarde.json` (une vingtaine de secondes après chaque modification).
+Ne supprimez pas ce message. Il ne contient ni identifiant ni mot de passe.
+
+- **Réglages → Sauvegarder maintenant** force l'envoi.
+- Sur un nouvel appareil (ou après une déconnexion), l'appli propose de restaurer
+  cette sauvegarde juste après la connexion.
+- **Réglages → Restaurer la dernière sauvegarde** remplace les données actuelles.
 
 ## Sécurité, en clair
 

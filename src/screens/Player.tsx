@@ -4,7 +4,8 @@ import { Icon } from '../components/Icon'
 import { VirtualList } from '../components/VirtualList'
 import { formatTime, trackArtist, trackTitle } from '../lib/format'
 import { cycleRepeat, jumpTo, next, prev, removeFromQueue, seek, toggle, toggleShuffle, usePlayer } from '../player/player'
-import { useUi } from '../store'
+import { toggleFavorite, useUser } from '../lib/userdata'
+import { openMenu, useUi } from '../store'
 
 /** Barre de progression : on déplace le curseur librement, la lecture ne saute qu'au relâchement. */
 function SeekBar() {
@@ -44,6 +45,7 @@ function SeekBar() {
 }
 
 function Queue() {
+  useUser((s) => s.metaVersion)
   const queue = usePlayer((s) => s.queue)
   const index = usePlayer((s) => s.index)
   const scroller = useRef<HTMLDivElement>(null)
@@ -93,6 +95,8 @@ export function Player() {
   const repeat = usePlayer((s) => s.repeat)
   const queueLength = usePlayer((s) => s.queue.length)
   const index = usePlayer((s) => s.index)
+  useUser((s) => s.metaVersion)
+  const favorite = useUser((s) => !!current && s.favorites.some((f) => f.key === current.key))
   const [showQueue, setShowQueue] = useState(false)
   const [coverSize, setCoverSize] = useState(300)
   const touchStart = useRef<number | null>(null)
@@ -144,9 +148,22 @@ export function Player() {
       )}
 
       <div className="player-bottom">
-        <div className="player-titles">
-          <span className="player-title">{trackTitle(current)}</span>
-          <span className={`player-artist${error ? ' err' : ''}`}>{status ?? trackArtist(current)}</span>
+        <div className="player-head">
+          <div className="player-titles">
+            <span className="player-title">{trackTitle(current)}</span>
+            <span className={`player-artist${error ? ' err' : ''}`}>{status ?? trackArtist(current)}</span>
+          </div>
+          <button
+            className={`icon-btn${favorite ? ' toggled' : ''}`}
+            onClick={() => toggleFavorite(current.key)}
+            aria-label={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            aria-pressed={favorite}
+          >
+            <Icon name={favorite ? 'heart-full' : 'heart'} size={27} />
+          </button>
+          <button className="icon-btn" onClick={() => openMenu(current)} aria-label="Plus d’actions">
+            <Icon name="more" />
+          </button>
         </div>
         <SeekBar />
         <div className="controls">

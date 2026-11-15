@@ -726,7 +726,14 @@ button.setting:active {
   flex-direction: column;
   gap: 14px;
 }
+.player-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: -10px;
+}
 .player-titles {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -912,4 +919,91 @@ button.setting:active {
   from {
     transform: translateY(100%);
   }
+}
+
+/* ---------- Étape 3 : favoris, playlists, fenêtres ---------- */
+.fav-mark {
+  color: var(--accent-2);
+  flex: none;
+  display: grid;
+}
+.avatar.add {
+  background: var(--surface-2);
+  color: var(--accent);
+}
+.sticky-search {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding-top: 6px;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  background: rgba(13, 14, 19, 0.9);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+.sheet-scroll {
+  max-height: 46vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.sheet-item .track-text {
+  text-align: left;
+}
+.sheet-backdrop.top {
+  z-index: 35;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 70px) 18px 0;
+}
+.dialog {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 20px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: fade 0.18s ease;
+}
+.dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.dialog input {
+  background: var(--bg);
+}
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.dialog-actions .secondary {
+  height: 50px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font-size: 16px;
+}
+.dialog-actions .primary {
+  height: 50px;
+  flex: 1;
+}
+.summary {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.note {
+  margin-top: 10px;
 }

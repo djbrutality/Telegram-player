@@ -6,7 +6,13 @@ import type { ChatInfo } from './lib/types'
 import { initMediaSession } from './player/mediaSession'
 import { restorePlayer } from './player/player'
 import { initStreaming } from './player/stream'
+import { Dialog } from './components/Dialog'
 import { TrackMenu } from './components/TrackMenu'
+import { applyBackup, hasPendingBackup, markDirty, runBackup } from './lib/backup'
+import { loadUserData } from './lib/userdata'
+import { Favorites } from './screens/Favorites'
+import { Restore } from './screens/Restore'
+import { Search } from './screens/Search'
 import { Player } from './screens/Player'
 import { ChatPicker } from './screens/ChatPicker'
 import { GroupView } from './screens/GroupView'
@@ -35,6 +41,8 @@ async function goOnline() {
     }
     useApp.setState({ net: 'online' })
     if (useApp.getState().chats.length) startIndexing()
+    // Une sauvegarde n'avait pas pu partir (appli fermée, hors ligne) : on l'envoie maintenant.
+    if (hasPendingBackup() && useApp.getState().phase === 'main') void runBackup()
   } catch {
     useApp.setState({ net: 'offline' })
   }
@@ -50,6 +58,7 @@ async function boot() {
   for (const s of await getAllIndexStates()) {
     setProgress(s.chatId, { count: s.count, total: s.total, complete: s.complete })
   }
+  await loadUserData()
   await restorePlayer()
   initMediaSession()
   useApp.setState({ chats, phase: chats.length ? 'main' : 'pick' })
@@ -62,6 +71,7 @@ async function applySelection(chats: ChatInfo[]) {
   useApp.setState({ chats: await getSelectedChats(), phase: 'main' })
   bumpLibrary(true)
   startIndexing()
+  markDirty()
 }
 
 function FloodBanner() {
@@ -116,8 +126,25 @@ export function App() {
       <div className="app">
         <Login
           onDone={() => {
-            useApp.setState({ phase: 'pick', loginNotice: null })
+            useApp.setState({ phase: 'restore', loginNotice: null })
             void goOnline()
+          }}
+        />
+      </div>
+    )
+  }
+
+  if (phase === 'restore') {
+    return (
+      <div className="app">
+        <FloodBanner />
+        <Restore
+          onSkip={() => useApp.setState({ phase: 'pick' })}
+          onRestore={async (backup) => {
+            await applyBackup(backup)
+            useApp.setState({ chats: await getSelectedChats(), phase: backup.chats.length ? 'main' : 'pick' })
+            bumpLibrary(true)
+            startIndexing()
           }}
         />
       </div>
@@ -150,15 +177,10 @@ export function App() {
     screen = <Groups onOpen={setOpenChat} onEdit={() => setOverlay('picker')} />
   } else if (tab === 'home') {
     screen = <Home onSettings={() => setOverlay('settings')} onGroups={() => setTab('groups')} />
+  } else if (tab === 'search') {
+    screen = <Search />
   } else {
-    screen = (
-      <div className="scroll">
-        <header className="topbar">
-          <h1>{tab === 'search' ? 'Recherche' : 'Favoris'}</h1>
-        </header>
-        <p className="muted pad">Cette partie arrive à l’étape 3.</p>
-      </div>
-    )
+    screen = <Favorites />
   }
 
   return (
@@ -169,6 +191,7 @@ export function App() {
       <MiniPlayer />
       <Player />
       <TrackMenu />
+      <Dialog />
       <Toast />
       <NavBar
         tab={tab}
