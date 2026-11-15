@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
-import { hueOf } from '../lib/format'
+import { chatKind, fold, hueOf } from '../lib/format'
 import type { ChatInfo } from '../lib/types'
 import { useApp } from '../store'
 import { backend } from '../tg/backend'
@@ -30,8 +30,8 @@ export function ChatPicker({ onDone, onCancel }: { onDone: (chats: ChatInfo[]) =
   }, [attempt])
 
   const shown = useMemo(() => {
-    const q = filter.trim().toLowerCase()
-    return (all ?? []).filter((c) => !q || c.title.toLowerCase().includes(q))
+    const q = fold(filter)
+    return (all ?? []).filter((c) => !q || fold(`${c.title} ${c.username ?? ''}`).includes(q))
   }, [all, filter])
 
   const toggle = (id: string) =>
@@ -83,7 +83,7 @@ export function ChatPicker({ onDone, onCancel }: { onDone: (chats: ChatInfo[]) =
                 </span>
                 <span className="track-text">
                   <span className="track-title">{c.title}</span>
-                  <span className="track-artist">{c.broadcast ? 'Canal' : 'Groupe'}</span>
+                  <span className="track-artist">{chatKind(c)}</span>
                 </span>
                 <span className={`checkbox${on ? ' on' : ''}`}>{on && <Icon name="check" size={16} />}</span>
               </button>

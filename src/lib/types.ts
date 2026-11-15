@@ -6,6 +6,8 @@ export interface ChatInfo {
   title: string
   /** true = canal de diffusion, false = groupe */
   broadcast: boolean
+  /** identifiant public (sans @), s'il existe */
+  username?: string
 }
 
 /** Un fichier audio trouvé dans un groupe. */

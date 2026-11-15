@@ -5,7 +5,7 @@ import { sleep } from '../lib/format'
 import type { Backend } from './backend'
 
 const chats: ChatInfo[] = [
-  { id: '101', kind: 'channel', accessHash: '1', title: 'Vinyles du dimanche', broadcast: true },
+  { id: '101', kind: 'channel', accessHash: '1', title: 'Vinyles du dimanche', broadcast: true, username: 'vinyles_dimanche' },
   { id: '102', kind: 'channel', accessHash: '1', title: 'Électro & nuits blanches', broadcast: false },
   { id: '103', kind: 'chat', title: 'Famille – partages', broadcast: false },
   { id: '104', kind: 'channel', accessHash: '1', title: 'Jazz, soul & autres trésors', broadcast: true },

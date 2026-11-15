@@ -1,4 +1,4 @@
-import type { Track } from './types'
+import type { ChatInfo, Track } from './types'
 import { getOverride } from './userdata'
 
 /** Titre affiché : correction manuelle, sinon métadonnée, sinon nom du fichier. */
@@ -46,4 +46,9 @@ export function fold(text: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
+}
+
+/** « Canal · @identifiant » ou « Groupe » : permet de distinguer deux conversations du même nom. */
+export function chatKind(c: ChatInfo): string {
+  return `${c.broadcast ? 'Canal' : 'Groupe'}${c.username ? ` · @${c.username}` : ''}`
 }

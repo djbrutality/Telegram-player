@@ -1,5 +1,5 @@
 import { Icon } from '../components/Icon'
-import { hueOf } from '../lib/format'
+import { chatKind, hueOf } from '../lib/format'
 import { useApp, type ChatProgress } from '../store'
 
 export function progressLabel(p: ChatProgress | undefined): string {
@@ -34,7 +34,10 @@ export function Groups({ onOpen, onEdit }: { onOpen: (id: string) => void; onEdi
               </span>
               <span className="track-text">
                 <span className="track-title">{c.title}</span>
-                <span className={`track-artist${p?.error ? ' err' : ''}`}>{progressLabel(p)}</span>
+                <span className={`track-artist${p?.error ? ' err' : ''}`}>
+                  {p?.error ? '' : `${chatKind(c)} · `}
+                  {progressLabel(p)}
+                </span>
                 {ratio !== null && (
                   <span className="bar">
                     <i style={{ width: `${Math.round(ratio * 100)}%` }} />

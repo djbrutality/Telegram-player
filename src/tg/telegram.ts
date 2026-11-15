@@ -230,6 +230,7 @@ export const telegramBackend: Backend = {
           accessHash: e.accessHash?.toString(),
           title: e.title,
           broadcast: !!e.broadcast,
+          username: e.username ?? e.usernames?.find((u) => u.active)?.username ?? undefined,
         })
       } else if (e instanceof Api.Chat && !e.deactivated && !e.left && !e.migratedTo) {
         out.push({ id: e.id.toString(), kind: 'chat', title: e.title, broadcast: false })
