@@ -58,6 +58,17 @@ async function loop() {
         }
         setProgress(chat.id, { busy: false })
       }
+      // Second passage, une fois tous les groupes parcourus : l'historique ancien que le filtre
+      // Musique de Telegram ne renvoie pas (constaté sur des canaux créés avant fin 2020).
+      for (const chat of useApp.getState().chats) {
+        if (gen !== generation) break
+        try {
+          await deepScan(chat, () => gen !== generation)
+        } catch (err) {
+          setProgress(chat.id, { error: frenchError(err) })
+        }
+        setProgress(chat.id, { busy: false, deep: false })
+      }
     } while (gen !== generation)
   } finally {
     running = false
@@ -124,5 +135,40 @@ async function indexChat(chat: ChatInfo, cancelled: () => boolean) {
   if (state.complete) {
     state.total = state.count
     await save()
+  }
+}
+
+/**
+ * Relit l'historique complet en dessous du plus ancien morceau trouvé par le filtre Musique,
+ * message par message, et garde les fichiers audio. Reprend où il s'était arrêté.
+ */
+async function deepScan(chat: ChatInfo, cancelled: () => boolean) {
+  const state = await getIndexState(chat.id)
+  if (!state?.complete || state.deepComplete) return
+  const api = await backend()
+  setProgress(chat.id, { busy: true, deep: true, error: undefined })
+  let offsetId = state.deepOldestId ?? state.oldestId
+  for (;;) {
+    if (cancelled()) return
+    // offsetId 0 = partir du message le plus récent (aucun morceau trouvé par le filtre).
+    const page = offsetId === 1 ? null : await api.historyPage(chat, offsetId, PAGE)
+    if (!page || page.rawCount === 0) {
+      state.deepComplete = true
+    } else {
+      if (page.tracks.length) {
+        await putTracks(page.tracks)
+        addToSearchIndex(page.tracks)
+        state.count += page.tracks.length
+        state.total = state.count
+      }
+      offsetId = page.minId
+      state.deepOldestId = offsetId
+    }
+    state.updatedAt = Date.now()
+    await putIndexState({ ...state })
+    setProgress(chat.id, { count: state.count, total: state.count, complete: true })
+    if (page?.tracks.length) bumpLibrary()
+    if (state.deepComplete) return
+    await sleep(PAUSE_MS)
   }
 }

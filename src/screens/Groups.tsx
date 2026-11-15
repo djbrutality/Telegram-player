@@ -9,6 +9,7 @@ export function progressLabel(p: ChatProgress | undefined): string {
   const n = `${p.count.toLocaleString('fr-FR')} morceau${p.count > 1 ? 'x' : ''}`
   if (p.complete && !p.busy) return n
   if (p.busy && !p.complete) return p.total > p.count ? `Indexation… ${p.count} / ${p.total}` : `Indexation… ${p.count}`
+  if (p.deep) return `${n} · relecture de l’historique…`
   if (p.busy) return `${n} · vérification…`
   return `${n} · indexation en attente`
 }

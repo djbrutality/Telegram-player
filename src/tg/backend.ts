@@ -17,6 +17,8 @@ export interface AudioPage {
 export interface Backend {
   listChats(): Promise<ChatInfo[]>
   searchAudio(chat: ChatInfo, o: { offsetId: number; minId: number; limit: number }): Promise<AudioPage>
+  /** Page de l'historique complet (tous types de messages), plus ancienne que `offsetId`. */
+  historyPage(chat: ChatInfo, offsetId: number, limit: number): Promise<AudioPage>
   /** Télécharge `limit` octets à partir de `offset` (multiples de 4096). */
   getFile(track: Track, offset: number, limit: number): Promise<Uint8Array>
   getThumb(track: Track): Promise<Blob | null>

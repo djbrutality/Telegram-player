@@ -7,6 +7,8 @@ export interface ChatProgress {
   total: number
   complete: boolean
   busy: boolean
+  /** relecture de l'historique ancien en cours */
+  deep?: boolean
   error?: string
 }
 

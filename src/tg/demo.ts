@@ -67,6 +67,13 @@ export const demoBackend: Backend = {
   async searchAudio(chat, { offsetId, minId, limit }) {
     await sleep(250)
     const total = counts[chat.id] ?? 0
+    // Le groupe 104 imite un canal dont le filtre Musique « oublie » l'historique ancien :
+    // le filtre ne renvoie que les messages 1001 à 1007, le reste n'est visible que par l'historique.
+    if (chat.id === '104') {
+      const list: Track[] = []
+      for (let n = offsetId ? offsetId - 1 : 1007; n > Math.max(minId, 1000) && list.length < limit; n--) list.push(makeTrack('104', n))
+      return { tracks: list, rawCount: list.length, minId: list.length ? list[list.length - 1].msgId : 0, maxId: list.length ? list[0].msgId : 0, total: 7 }
+    }
     const from = offsetId ? offsetId - 1 : total
     const tracks: Track[] = []
     for (let n = from; n > minId && n >= 1 && tracks.length < limit; n--) tracks.push(makeTrack(chat.id, n))
@@ -77,6 +84,20 @@ export const demoBackend: Backend = {
       maxId: tracks.length ? tracks[0].msgId : 0,
       total,
     }
+  },
+  async historyPage(chat, offsetId, limit) {
+    await sleep(60)
+    const top = chat.id === '104' ? 1007 : (counts[chat.id] ?? 0)
+    const tracks: Track[] = []
+    let raw = 0
+    let lo = 0
+    for (let n = offsetId ? offsetId - 1 : top; n >= 1 && raw < limit; n--) {
+      raw++
+      lo = n
+      // dans l'historique, seul un message sur quatre est un morceau
+      if (chat.id !== '104' || n > 1000 || n % 4 === 0) tracks.push(makeTrack(chat.id, n))
+    }
+    return { tracks, rawCount: raw, minId: lo, maxId: raw ? (offsetId ? offsetId - 1 : top) : 0, total: top }
   },
   async getFile(track, offset, limit) {
     await sleep(120)

@@ -29,7 +29,7 @@ export function Diagnostic({ onBack }: { onBack: () => void }) {
       const oldest = keys.length ? await getTrack(keys[keys.length - 1]) : undefined
       const date = (s?: number) => (s ? new Date(s * 1000).toISOString().slice(0, 10) : '?')
       out.push(`Onde : ${keys.length} morceaux, du #${ids[ids.length - 1] ?? 0} (${date(oldest?.date)}) au #${ids[0] ?? 0} (${date(newest?.date)})`)
-      out.push(`État : terminé=${state?.complete} compte=${state?.count} total=${state?.total} plusAncien=${state?.oldestId} plusRécent=${state?.newestId}`)
+      out.push(`État : terminé=${state?.complete} compte=${state?.count} total=${state?.total} plusAncien=${state?.oldestId} plusRécent=${state?.newestId} historique=${state?.deepComplete ? 'terminé' : `en cours (#${state?.deepOldestId ?? '-'})`}`)
       const remote = await (await backend()).diagnose(chat, query.trim(), { count: keys.length, oldestId: state?.oldestId ?? 0 })
       out.push(...remote.lines)
       if (remote.ids.length) {

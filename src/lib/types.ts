@@ -44,6 +44,9 @@ export interface IndexState {
   count: number
   total: number
   updatedAt: number
+  /** relecture de l'historique ancien (ce que le filtre Musique de Telegram ne renvoie pas) */
+  deepOldestId?: number
+  deepComplete?: boolean
 }
 
 export type PlaybackMode = 'auto' | 'stream' | 'full'
