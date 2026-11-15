@@ -1007,3 +1007,31 @@ input[type='search']::-webkit-search-cancel-button {
 .note {
   margin-top: 10px;
 }
+
+/* message d'attente au démarrage : n'apparaît que si l'ouverture dure plus de 2 s */
+.boot-note {
+  opacity: 0;
+  animation: fade-in 0.4s ease 2s forwards;
+}
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+.track-row.skeleton .cover-ph {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  flex: none;
+}
+.track-row.skeleton .line {
+  height: 12px;
+  width: 55%;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+.track-row.skeleton .line.short {
+  width: 30%;
+  height: 10px;
+}

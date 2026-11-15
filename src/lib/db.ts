@@ -5,7 +5,7 @@ import type { ChatInfo, IndexState, Track } from './types'
 export const DB_NAME = 'onde'
 
 interface Schema extends DBSchema {
-  tracks: { key: string; value: Track; indexes: { byChat: string } }
+  tracks: { key: string; value: Track; indexes: { byChat: string; byDate: number } }
   chats: { key: string; value: ChatInfo }
   indexState: { key: string; value: IndexState }
   covers: { key: string; value: Blob }
@@ -15,13 +15,17 @@ interface Schema extends DBSchema {
 let dbPromise: Promise<IDBPDatabase<Schema>> | null = null
 
 export function db() {
-  dbPromise ??= openDB<Schema>(DB_NAME, 1, {
-    upgrade(d) {
-      d.createObjectStore('tracks', { keyPath: 'key' }).createIndex('byChat', 'chatId')
-      d.createObjectStore('chats', { keyPath: 'id' })
-      d.createObjectStore('indexState', { keyPath: 'chatId' })
-      d.createObjectStore('covers')
-      d.createObjectStore('kv')
+  dbPromise ??= openDB<Schema>(DB_NAME, 2, {
+    upgrade(d, oldVersion, _newVersion, tx) {
+      if (oldVersion < 1) {
+        d.createObjectStore('tracks', { keyPath: 'key' }).createIndex('byChat', 'chatId')
+        d.createObjectStore('chats', { keyPath: 'id' })
+        d.createObjectStore('indexState', { keyPath: 'chatId' })
+        d.createObjectStore('covers')
+        d.createObjectStore('kv')
+      }
+      // v2 : classement par date, pour afficher les derniers ajouts sans tout relire.
+      if (oldVersion < 2) tx.objectStore('tracks').createIndex('byDate', 'date')
     },
   })
   return dbPromise
@@ -47,12 +51,11 @@ export async function setSelectedChats(chats: ChatInfo[]) {
 
 export async function deleteChatData(chatId: string) {
   const d = await db()
+  // Les identifiants des morceaux commencent tous par "<groupe>_" : on efface la plage d'un coup.
+  const range = IDBKeyRange.bound(`${chatId}_`, `${chatId}_\uffff`)
   const tx = d.transaction(['tracks', 'indexState', 'covers'], 'readwrite')
-  const keys = await tx.objectStore('tracks').index('byChat').getAllKeys(chatId)
-  for (const k of keys) {
-    await tx.objectStore('tracks').delete(k)
-    await tx.objectStore('covers').delete(k)
-  }
+  await tx.objectStore('tracks').delete(range)
+  await tx.objectStore('covers').delete(range)
   await tx.objectStore('indexState').delete(chatId)
   await tx.done
 }
@@ -69,14 +72,40 @@ export async function getTrack(key: string) {
   return (await db()).get('tracks', key)
 }
 
-/** Morceaux d'un groupe, du plus récent au plus ancien. */
-export async function getTracksOfChat(chatId: string): Promise<Track[]> {
-  const list = await (await db()).getAllFromIndex('tracks', 'byChat', chatId)
-  return list.sort((a, b) => b.msgId - a.msgId)
+/** Identifiants des morceaux d'un groupe, du plus récent au plus ancien (léger, même pour 200 000 morceaux). */
+export async function getChatKeys(chatId: string): Promise<string[]> {
+  const keys = await (await db()).getAllKeysFromIndex('tracks', 'byChat', chatId)
+  const cut = chatId.length + 1
+  return keys.sort((a, b) => Number(b.slice(cut)) - Number(a.slice(cut)))
 }
 
-export async function getAllTracks(): Promise<Track[]> {
-  return (await db()).getAll('tracks')
+/** Les morceaux les plus récents de toute la bibliothèque. */
+export async function getRecentTracks(limit: number): Promise<Track[]> {
+  const out: Track[] = []
+  let cursor = await (await db()).transaction('tracks').store.index('byDate').openCursor(null, 'prev')
+  while (cursor && out.length < limit) {
+    out.push(cursor.value)
+    cursor = await cursor.continue()
+  }
+  return out
+}
+
+export async function countTracks(): Promise<number> {
+  return (await db()).count('tracks')
+}
+
+/** Parcourt toute la bibliothèque par paquets, sans jamais tout charger en mémoire d'un coup. */
+export async function forEachTrackPage(onPage: (tracks: Track[]) => void, cancelled: () => boolean, pageSize = 2500) {
+  const d = await db()
+  let last: string | undefined
+  for (;;) {
+    const page: Track[] = await d.getAll('tracks', last === undefined ? undefined : IDBKeyRange.lowerBound(last, true), pageSize)
+    if (!page.length || cancelled()) return
+    onPage(page)
+    last = page[page.length - 1].key
+    if (page.length < pageSize) return
+    await new Promise((r) => setTimeout(r)) // laisse l'interface respirer
+  }
 }
 
 // --- Avancement de l'indexation ---

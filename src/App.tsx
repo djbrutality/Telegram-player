@@ -22,7 +22,8 @@ import { Login } from './screens/Login'
 import { Settings } from './screens/Settings'
 import { bumpLibrary, setProgress, useApp, useUi } from './store'
 import { connect, getMyName, hasSession, isDemo } from './tg/client'
-import { startIndexing, stopIndexing } from './tg/indexer'
+import { refreshIfStale, startIndexing, stopIndexing } from './tg/indexer'
+import { resetSearchIndex } from './lib/searchIndex'
 
 /** Connexion en arrière-plan : l'appli s'ouvre tout de suite avec l'index déjà enregistré. */
 async function goOnline() {
@@ -68,6 +69,7 @@ async function boot() {
 async function applySelection(chats: ChatInfo[]) {
   stopIndexing()
   await setSelectedChats(chats)
+  resetSearchIndex()
   useApp.setState({ chats: await getSelectedChats(), phase: 'main' })
   bumpLibrary(true)
   startIndexing()
@@ -103,7 +105,10 @@ export function App() {
     void boot()
     // Au retour au premier plan, on relance la connexion si iOS l'avait coupée.
     const wake = () => {
-      if (document.visibilityState === 'visible' && useApp.getState().phase === 'main' && useApp.getState().net === 'offline') void goOnline()
+      const { phase, net } = useApp.getState()
+      if (document.visibilityState !== 'visible' || phase !== 'main') return
+      if (net === 'offline') void goOnline()
+      else if (net === 'online') refreshIfStale() // nouveaux morceaux publiés entre-temps
     }
     document.addEventListener('visibilitychange', wake)
     window.addEventListener('online', wake)
@@ -117,6 +122,7 @@ export function App() {
     return (
       <div className="app center-block full">
         <span className="spinner" />
+        <p className="muted small boot-note">Préparation de la bibliothèque…</p>
       </div>
     )
   }

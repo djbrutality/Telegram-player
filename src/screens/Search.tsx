@@ -1,41 +1,35 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ROW_HEIGHT, TrackRow } from '../components/TrackRow'
 import { VirtualList } from '../components/VirtualList'
-import { fold, trackArtist, trackTitle } from '../lib/format'
-import { useAllTracks } from '../lib/library'
-import { useUser } from '../lib/userdata'
+import { useTracksByKeys } from '../lib/library'
+import { ensureSearchIndex, searchKeys, useSearchIndex } from '../lib/searchIndex'
 import { playList, usePlayer } from '../player/player'
+
+const MAX_RESULTS = 300
 
 /** Recherche par titre et artiste dans tous les groupes choisis. */
 export function Search() {
-  const all = useAllTracks()
-  const metaVersion = useUser((s) => s.metaVersion)
+  const index = useSearchIndex()
   const currentKey = usePlayer((s) => s.current?.key)
   const playing = usePlayer((s) => s.playing)
   const [text, setText] = useState('')
   const [query, setQuery] = useState('')
 
+  useEffect(ensureSearchIndex, [index.status])
+
   // On attend une courte pause dans la frappe avant de chercher.
   useEffect(() => {
-    const t = setTimeout(() => setQuery(text), 180)
+    const t = setTimeout(() => setQuery(text), 200)
     return () => clearTimeout(t)
   }, [text])
 
-  // Texte de recherche de chaque morceau : titre, artiste et nom de fichier, sans accents.
-  const index = useMemo(
-    () => (all ?? []).map((t) => ({ t, hay: fold(`${trackTitle(t)} ${trackArtist(t)} ${t.fileName ?? ''}`) })),
+  const found = useMemo(
+    () => searchKeys(query, MAX_RESULTS),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [all, metaVersion],
+    [query, index.version, index.status],
   )
-
-  const results = useMemo(() => {
-    const words = fold(query).split(/\s+/).filter(Boolean)
-    if (!words.length) return null
-    return index
-      .filter((e) => words.every((w) => e.hay.includes(w)))
-      .map((e) => e.t)
-      .sort((a, b) => b.date - a.date)
-  }, [index, query])
+  const results = useTracksByKeys(found?.keys ?? null)
+  const building = index.status !== 'ready'
 
   return (
     <div className="scroll">
@@ -55,30 +49,38 @@ export function Search() {
           onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         />
       </div>
-      {!results && (
-        <p className="muted pad">
-          {all ? `Cherchez parmi ${all.length.toLocaleString('fr-FR')} morceaux, dans tous vos groupes.` : 'Chargement de la bibliothèque…'}
+      {building && (
+        <p className="muted small pad">
+          <span className="spinner small" /> Préparation de la recherche… {Math.round(index.progress * 100)} % (
+          {index.count.toLocaleString('fr-FR')} morceaux)
         </p>
       )}
-      {results && results.length === 0 && <p className="muted pad">Aucun résultat pour « {query.trim()} ».</p>}
-      {results && results.length > 0 && (
+      {!found && !building && (
+        <p className="muted pad">Cherchez parmi {index.count.toLocaleString('fr-FR')} morceaux, dans tous vos groupes.</p>
+      )}
+      {found && found.total === 0 && !building && <p className="muted pad">Aucun résultat pour « {query.trim()} ».</p>}
+      {found && found.total > 0 && (
         <>
           <p className="muted small pad">
-            {results.length.toLocaleString('fr-FR')} résultat{results.length > 1 ? 's' : ''}
+            {found.total > MAX_RESULTS
+              ? `${found.total.toLocaleString('fr-FR')} résultats — les ${MAX_RESULTS} plus récents sont affichés. Précisez la recherche pour affiner.`
+              : `${found.total} résultat${found.total > 1 ? 's' : ''}`}
           </p>
-          <VirtualList
-            items={results}
-            rowHeight={ROW_HEIGHT}
-            render={(t, i) => (
-              <TrackRow
-                key={t.key}
-                track={t}
-                active={t.key === currentKey}
-                playing={playing}
-                onPlay={() => playList(results, i, `Recherche « ${query.trim()} »`)}
-              />
-            )}
-          />
+          {results && (
+            <VirtualList
+              items={results}
+              rowHeight={ROW_HEIGHT}
+              render={(t, i) => (
+                <TrackRow
+                  key={t.key}
+                  track={t}
+                  active={t.key === currentKey}
+                  playing={playing}
+                  onPlay={() => playList(results, i, `Recherche « ${query.trim()} »`)}
+                />
+              )}
+            />
+          )}
         </>
       )}
     </div>

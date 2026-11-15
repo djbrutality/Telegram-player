@@ -45,7 +45,7 @@ export function setProgress(chatId: string, patch: Partial<ChatProgress>) {
 }
 
 let bumpTimer: number | undefined
-/** Signale (au plus une fois par seconde) que la bibliothèque a changé. */
+/** Signale (au plus toutes les 2,5 s) que la bibliothèque a changé. */
 export function bumpLibrary(now = false) {
   if (now) {
     clearTimeout(bumpTimer)
@@ -56,7 +56,7 @@ export function bumpLibrary(now = false) {
   bumpTimer ??= window.setTimeout(() => {
     bumpTimer = undefined
     useApp.setState((s) => ({ libVersion: s.libVersion + 1 }))
-  }, 1000)
+  }, 2500)
 }
 
 export function setPlaybackMode(mode: PlaybackMode) {

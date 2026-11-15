@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { trackArtist, trackTitle } from '../lib/format'
+import { updateSearchEntry } from '../lib/searchIndex'
 import type { Track } from '../lib/types'
 import { addToPlaylist, createPlaylist, getOverride, removeFromPlaylist, setOverride, toggleFavorite, useUser } from '../lib/userdata'
 import { addToQueue, playNext } from '../player/player'
@@ -38,6 +39,7 @@ export function askEditMeta(track: Track) {
           title: title && title !== (track.title ?? '') ? title : undefined,
           performer: performer && performer !== (track.performer ?? '') ? performer : undefined,
         })
+        updateSearchEntry(track)
         bumpLibrary(true)
         toast('Morceau corrigé')
       },
