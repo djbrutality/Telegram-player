@@ -2,11 +2,14 @@
 import { Api } from 'telegram'
 import { FileMigrateError } from 'telegram/errors'
 import bigInt from 'big-integer'
-import { Buffer } from 'buffer'
+import type { Buffer as BufferType } from 'buffer'
 import type { ChatInfo, Track } from '../lib/types'
 import { db, putTracks } from '../lib/db'
 import type { AudioPage, Backend } from './backend'
 import { call, ready } from './client'
+
+// Buffer global fourni par le polyfill : c'est celui que GramJS reconnaît.
+declare const Buffer: typeof BufferType
 
 function inputPeer(chat: ChatInfo): Api.TypeInputPeer {
   return chat.kind === 'channel'
