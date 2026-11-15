@@ -10,12 +10,21 @@ interface Schema extends DBSchema {
   indexState: { key: string; value: IndexState }
   covers: { key: string; value: Blob }
   kv: { key: string; value: unknown }
+  /** fichiers audio gardés pour l'écoute hors ligne */
+  offline: { key: string; value: Blob }
+  offlineMeta: { key: string; value: OfflineMeta }
+}
+
+export interface OfflineMeta {
+  key: string
+  size: number
+  at: number
 }
 
 let dbPromise: Promise<IDBPDatabase<Schema>> | null = null
 
 export function db() {
-  dbPromise ??= openDB<Schema>(DB_NAME, 2, {
+  dbPromise ??= openDB<Schema>(DB_NAME, 3, {
     upgrade(d, oldVersion, _newVersion, tx) {
       if (oldVersion < 1) {
         d.createObjectStore('tracks', { keyPath: 'key' }).createIndex('byChat', 'chatId')
@@ -26,6 +35,11 @@ export function db() {
       }
       // v2 : classement par date, pour afficher les derniers ajouts sans tout relire.
       if (oldVersion < 2) tx.objectStore('tracks').createIndex('byDate', 'date')
+      // v3 : écoute hors ligne.
+      if (oldVersion < 3) {
+        d.createObjectStore('offline')
+        d.createObjectStore('offlineMeta', { keyPath: 'key' })
+      }
     },
   })
   return dbPromise
@@ -53,9 +67,11 @@ export async function deleteChatData(chatId: string) {
   const d = await db()
   // Les identifiants des morceaux commencent tous par "<groupe>_" : on efface la plage d'un coup.
   const range = IDBKeyRange.bound(`${chatId}_`, `${chatId}_\uffff`)
-  const tx = d.transaction(['tracks', 'indexState', 'covers'], 'readwrite')
+  const tx = d.transaction(['tracks', 'indexState', 'covers', 'offline', 'offlineMeta'], 'readwrite')
   await tx.objectStore('tracks').delete(range)
   await tx.objectStore('covers').delete(range)
+  await tx.objectStore('offline').delete(range)
+  await tx.objectStore('offlineMeta').delete(range)
   await tx.objectStore('indexState').delete(chatId)
   await tx.done
 }
@@ -125,6 +141,34 @@ export async function getCover(key: string) {
 }
 export async function putCover(key: string, blob: Blob) {
   await (await db()).put('covers', blob, key)
+}
+
+// --- Écoute hors ligne ---
+export async function getOfflineMetas(): Promise<OfflineMeta[]> {
+  return (await db()).getAll('offlineMeta')
+}
+export async function getOfflineBlob(key: string) {
+  return (await db()).get('offline', key)
+}
+export async function putOffline(key: string, blob: Blob): Promise<OfflineMeta> {
+  const meta = { key, size: blob.size, at: Date.now() }
+  const tx = (await db()).transaction(['offline', 'offlineMeta'], 'readwrite')
+  await tx.objectStore('offline').put(blob, key)
+  await tx.objectStore('offlineMeta').put(meta)
+  await tx.done
+  return meta
+}
+export async function deleteOffline(key: string) {
+  const tx = (await db()).transaction(['offline', 'offlineMeta'], 'readwrite')
+  await tx.objectStore('offline').delete(key)
+  await tx.objectStore('offlineMeta').delete(key)
+  await tx.done
+}
+export async function clearOfflineStores() {
+  const tx = (await db()).transaction(['offline', 'offlineMeta'], 'readwrite')
+  await tx.objectStore('offline').clear()
+  await tx.objectStore('offlineMeta').clear()
+  await tx.done
 }
 
 // --- Réglages divers ---

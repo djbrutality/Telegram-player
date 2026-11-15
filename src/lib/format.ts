@@ -24,9 +24,10 @@ export function formatTime(seconds: number): string {
 }
 
 export function formatBytes(n: number): string {
+  if (n <= 0) return '0 Mo'
   if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} Ko`
-  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(1)} Mo`
-  return `${(n / 1024 ** 3).toFixed(2)} Go`
+  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} Mo`
+  return `${(n / 1024 ** 3).toFixed(2).replace('.', ',')} Go`
 }
 
 /** Teinte stable (0-359) calculée à partir d'un texte, pour les pochettes par défaut. */

@@ -8,10 +8,9 @@ Onde est une web app (PWA) personnelle : elle lit les fichiers audio partagés d
   ils restent sur le téléphone.
 - Hébergement gratuit sur GitHub Pages.
 
-> **Avancement** — Étapes 1 à 3 terminées : connexion, choix des groupes, indexation,
-> lecteur complet, écran verrouillé, reprise de lecture, recherche, favoris, playlists,
-> correction des titres et sauvegarde dans les Messages enregistrés. Reste l'écoute
-> hors ligne et les finitions (étape 4).
+Fonctions : lecture en streaming, lecteur complet avec file d'attente, commandes sur
+l'écran verrouillé, reprise de lecture, recherche, favoris, playlists, correction des
+titres, sauvegarde dans les Messages enregistrés et écoute hors ligne.
 
 ---
 
@@ -75,6 +74,24 @@ problème : le code ne contient aucun identifiant ni aucune donnée personnelle.
 
 Telegram vous signalera une « nouvelle connexion » : c'est normal, c'est Onde.
 Vous la retrouverez dans Telegram → Réglages → Appareils.
+
+## Écoute hors ligne
+
+- Sur un morceau : bouton **⋯** → **Garder hors ligne**. Une petite flèche orange
+  indique les morceaux présents sur le téléphone.
+- Pour toute une playlist : la flèche en haut de la playlist. Pour tous les favoris :
+  **Tout garder hors ligne**.
+- La liste complète est dans **Favoris → Hors ligne**, avec l'espace occupé et un bouton
+  **Vider**. Les réglages affichent aussi l'espace total utilisé par l'appli.
+- Sans réseau, l'appli s'ouvre quand même (après avoir été ouverte au moins une fois en
+  ligne) : seuls les morceaux gardés sont lisibles, et la lecture saute les autres.
+
+Laissez l'appli ouverte pendant un téléchargement : iOS suspend les web apps en
+arrière-plan lorsqu'aucune musique n'est en cours de lecture.
+
+iOS peut effacer les données d'une web app restée longtemps inutilisée, ou si le
+téléphone manque d'espace. Vos favoris et playlists sont à l'abri grâce à la sauvegarde
+Telegram ; les fichiers hors ligne, eux, seraient à retélécharger.
 
 ## Sauvegarde
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { trackArtist, trackTitle } from '../lib/format'
+import { keepOffline, removeOffline, useOffline } from '../lib/offline'
 import { updateSearchEntry } from '../lib/searchIndex'
 import type { Track } from '../lib/types'
 import { addToPlaylist, createPlaylist, getOverride, removeFromPlaylist, setOverride, toggleFavorite, useUser } from '../lib/userdata'
@@ -53,6 +54,7 @@ export function TrackMenu() {
   const playlistId = useUi((s) => s.menuPlaylist)
   const favorite = useUser((s) => !!track && s.favorites.some((f) => f.key === track.key))
   const playlists = useUser((s) => s.playlists)
+  const offline = useOffline((s) => !!track && track.key in s.saved)
   const [choosing, setChoosing] = useState(false)
   useEffect(() => setChoosing(false), [track])
   if (!track) return null
@@ -115,6 +117,15 @@ export function TrackMenu() {
             <button className="sheet-item" onClick={() => setChoosing(true)}>
               <Icon name="list" /> Ajouter à une playlist…
             </button>
+            {offline ? (
+              <button className="sheet-item" onClick={run(() => void removeOffline(track.key), 'Retiré du téléphone')}>
+                <Icon name="close" /> Retirer du hors-ligne
+              </button>
+            ) : (
+              <button className="sheet-item" onClick={run(() => void keepOffline([track]), 'Téléchargement pour le hors-ligne…')}>
+                <Icon name="download" /> Garder hors ligne
+              </button>
+            )}
             {playlistId && (
               <button className="sheet-item" onClick={run(() => removeFromPlaylist(playlistId, track.key), 'Retiré de la playlist')}>
                 <Icon name="close" /> Retirer de cette playlist

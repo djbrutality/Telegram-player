@@ -2,6 +2,7 @@
 // la vraie (telegram.ts) et une fausse pour le développement (demo.ts).
 import type { ChatInfo, Track } from '../lib/types'
 import { isDemo } from './client'
+import { telegramBackend } from './telegram'
 
 export interface AudioPage {
   tracks: Track[]
@@ -34,8 +35,6 @@ export interface Backend {
 
 let cached: Promise<Backend> | null = null
 export function backend(): Promise<Backend> {
-  cached ??= import.meta.env.DEV && isDemo
-    ? import('./demo').then((m) => m.demoBackend)
-    : import('./telegram').then((m) => m.telegramBackend)
+  cached ??= import.meta.env.DEV && isDemo ? import('./demo').then((m) => m.demoBackend) : Promise.resolve(telegramBackend)
   return cached
 }

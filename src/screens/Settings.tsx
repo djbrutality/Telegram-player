@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { applyBackup, findBackup, runBackup, useBackup } from '../lib/backup'
 import { getSelectedChats, wipeEverything } from '../lib/db'
+import { formatBytes } from '../lib/format'
+import { clearOffline, useOffline } from '../lib/offline'
 import type { PlaybackMode } from '../lib/types'
 import { streamAvailable } from '../player/stream'
 import { audio } from '../player/player'
@@ -74,6 +76,17 @@ export function Settings({ onBack, onEditChats, onDiagnostic }: { onBack: () => 
           ? `Dernière : ${new Date(backup.last).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
           : 'Jamais effectuée'
 
+  const saved = useOffline((s) => s.saved)
+  const offlineList = Object.values(saved)
+  const offlineBytes = offlineList.reduce((n, m) => n + m.size, 0)
+  const [usage, setUsage] = useState<number | null>(null)
+  useEffect(() => {
+    navigator.storage?.estimate?.().then((e) => setUsage(e.usage ?? null), () => {})
+  }, [saved])
+  const wipeOffline = () => {
+    if (confirm(`Retirer les ${offlineList.length} morceaux gardés hors ligne ?`)) void clearOffline().then(() => toast('Espace libéré'))
+  }
+
   const reindex = () => {
     if (confirm('Effacer l’index local et reparcourir tous les groupes ?')) void reindexAll()
   }
@@ -125,6 +138,28 @@ export function Settings({ onBack, onEditChats, onDiagnostic }: { onBack: () => 
         la forme d’un fichier onde-sauvegarde.json.
       </p>
 
+      <h2 className="section">Hors ligne</h2>
+      <div className="group">
+        <div className="setting">
+          <span>Morceaux gardés</span>
+          <span className="muted">
+            {offlineList.length} · {formatBytes(offlineBytes)}
+          </span>
+        </div>
+        {usage !== null && (
+          <div className="setting">
+            <span>Espace total utilisé par Onde</span>
+            <span className="muted">{formatBytes(usage)}</span>
+          </div>
+        )}
+        <button className="setting danger" onClick={wipeOffline} disabled={!offlineList.length}>
+          <span>Vider les morceaux hors ligne</span>
+        </button>
+      </div>
+      <p className="muted small pad note">
+        L’espace total comprend aussi l’index de la bibliothèque et les pochettes. Pour garder un morceau : « ⋯ » puis « Garder hors ligne ».
+      </p>
+
       <h2 className="section">Lecture</h2>
       <div className="group">
         <div className="setting col">
@@ -149,7 +184,7 @@ export function Settings({ onBack, onEditChats, onDiagnostic }: { onBack: () => 
           <span>{busy ? 'Déconnexion…' : 'Se déconnecter et tout effacer'}</span>
         </button>
       </div>
-      <p className="muted small center pad">Onde · étape 3</p>
+      <p className="muted small center pad">Onde · version 1.0</p>
     </div>
   )
 }
