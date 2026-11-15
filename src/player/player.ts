@@ -2,6 +2,7 @@
 // le préchargement du morceau suivant et la sauvegarde de la position.
 import { create } from 'zustand'
 import { getTracksByKeys, kvGet, kvSet } from '../lib/db'
+import { isOffline } from '../lib/offline'
 import type { Track } from '../lib/types'
 import { useApp } from '../store'
 import { frenchError } from '../tg/client'
@@ -110,8 +111,16 @@ function load(track: Track, startAt = 0) {
   const ready = fullBlob(track.key)
   if (ready) return useBlob(ready, startAt)
 
+  const local = isOffline(track.key)
+  if (!local && useApp.getState().net === 'offline') {
+    clearWatchdog()
+    audio.pause()
+    set({ loading: false, playing: false, error: 'Hors ligne : ce morceau n’est pas enregistré sur le téléphone.' })
+    return
+  }
+
   const mode = useApp.getState().playbackMode
-  if (mode !== 'full' && streamAvailable()) {
+  if (!local && mode !== 'full' && streamAvailable()) {
     set({ source: 'stream' })
     resumeAt = startAt
     audio.src = streamUrl(track)
@@ -227,6 +236,20 @@ export function next(auto = false) {
     audio.currentTime = 0
     tryPlay()
     return
+  }
+  // Sans réseau, on saute directement au prochain morceau disponible sur le téléphone.
+  if (useApp.getState().net === 'offline') {
+    const playable = (t: Track) => isOffline(t.key) || !!fullBlob(t.key)
+    let target = queue.findIndex((t, i) => i > index && playable(t))
+    if (target < 0 && repeat === 'all') target = queue.findIndex(playable)
+    if (target >= 0 && target !== index) {
+      set({ index: target })
+      return load(queue[target])
+    }
+    if (auto) {
+      audio.pause()
+      return set({ playing: false })
+    }
   }
   if (index + 1 < queue.length) {
     set({ index: index + 1 })

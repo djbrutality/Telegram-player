@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { formatTime, trackArtist, trackTitle } from '../lib/format'
+import { useOffline } from '../lib/offline'
 import type { Track } from '../lib/types'
 import { useUser } from '../lib/userdata'
 import { openMenu } from '../store'
@@ -23,6 +24,8 @@ export const TrackRow = memo(function TrackRow({
 }) {
   useUser((s) => s.metaVersion) // se réaffiche quand un titre est corrigé
   const favorite = useUser((s) => s.favorites.some((f) => f.key === track.key))
+  const offline = useOffline((s) => track.key in s.saved)
+  const downloading = useOffline((s) => s.current?.key === track.key || s.queue.some((t) => t.key === track.key))
   return (
     <div className={`track-row${active ? ' active' : ''}`}>
       <button className="track-main" onClick={onPlay}>
@@ -40,6 +43,12 @@ export const TrackRow = memo(function TrackRow({
           <span className="track-title">{trackTitle(track)}</span>
           <span className="track-artist">{trackArtist(track)}</span>
         </span>
+        {downloading && <span className="spinner small" />}
+        {offline && (
+          <span className="off-mark" aria-label="Disponible hors ligne">
+            <Icon name="download" size={14} />
+          </span>
+        )}
         {favorite && (
           <span className="fav-mark">
             <Icon name="heart-full" size={13} />

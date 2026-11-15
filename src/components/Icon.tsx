@@ -19,6 +19,7 @@ const paths: Record<string, string> = {
   edit: 'M4 20h4L19 9l-4-4L4 16v4Zm9.5-13.5 4 4',
   trash: 'M5 7h14M10 7V4.5h4V7m-7 0 .8 12.5h8.4L17 7',
   list: 'M4 6.5h16M4 12h16M4 17.5h10',
+  download: 'M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14',
   music: 'M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Zm10-2a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z',
 }
 

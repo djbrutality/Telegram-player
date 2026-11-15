@@ -1,6 +1,7 @@
 // Streaming : le lecteur audio demande des « tranches » du fichier (requêtes Range),
 // le service worker les transmet ici, et on télécharge les blocs voulus depuis Telegram.
-import { getTrack } from '../lib/db'
+import { getOfflineBlob, getTrack } from '../lib/db'
+import { isOffline } from '../lib/offline'
 import type { Track } from '../lib/types'
 import { backend } from '../tg/backend'
 
@@ -140,6 +141,14 @@ export async function downloadFull(
   const existing = fullBlobs.get(track.key)
   if (existing) return existing
   registerTrack(track)
+  // Morceau gardé hors ligne : on le prend sur le téléphone, sans réseau.
+  if (isOffline(track.key)) {
+    const stored = await getOfflineBlob(track.key)
+    if (stored) {
+      fullBlobs.set(track.key, stored)
+      return stored
+    }
+  }
   const n = chunkCount(track)
   const parts: Uint8Array[] = []
   for (let i = 0; i < n; i++) {
@@ -190,4 +199,20 @@ export async function initStreaming() {
   } catch (err) {
     console.warn('Service worker indisponible', err)
   }
+  // Une fois l'appli chargée, on indique au service worker quels fichiers garder
+  // pour pouvoir la rouvrir sans réseau.
+  setTimeout(cacheAppShell, 6000)
+}
+
+function cacheAppShell() {
+  const sw = navigator.serviceWorker?.controller
+  if (!sw) return
+  const scope = new URL('.', document.baseURI).href
+  const urls = new Set<string>([scope])
+  for (const el of document.querySelectorAll<HTMLLinkElement | HTMLScriptElement>('script[src], link[href]')) {
+    urls.add(new URL((el as HTMLScriptElement).src || (el as HTMLLinkElement).href, document.baseURI).href)
+  }
+  for (const e of performance.getEntriesByType('resource')) urls.add(e.name)
+  const list = [...urls].filter((u) => u.startsWith(scope) && !u.includes('/stream/') && !u.endsWith('/sw.js'))
+  sw.postMessage({ type: 'onde-shell', urls: list })
 }

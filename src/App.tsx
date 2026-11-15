@@ -9,6 +9,7 @@ import { initStreaming } from './player/stream'
 import { Dialog } from './components/Dialog'
 import { TrackMenu } from './components/TrackMenu'
 import { applyBackup, hasPendingBackup, markDirty, runBackup } from './lib/backup'
+import { loadOfflineState } from './lib/offline'
 import { loadUserData } from './lib/userdata'
 import { Diagnostic } from './screens/Diagnostic'
 import { Favorites } from './screens/Favorites'
@@ -28,6 +29,11 @@ import { resetSearchIndex } from './lib/searchIndex'
 
 /** Connexion en arrière-plan : l'appli s'ouvre tout de suite avec l'index déjà enregistré. */
 async function goOnline() {
+  // Sans réseau, inutile d'attendre l'échec de la connexion : on passe tout de suite en mode hors ligne.
+  if (!navigator.onLine) {
+    useApp.setState({ net: 'offline' })
+    return
+  }
   useApp.setState({ net: 'connecting' })
   try {
     if (!isDemo) {
@@ -61,6 +67,7 @@ async function boot() {
     setProgress(s.chatId, { count: s.count, total: s.total, complete: s.complete })
   }
   await loadUserData()
+  await loadOfflineState()
   await restorePlayer()
   initMediaSession()
   useApp.setState({ chats, phase: chats.length ? 'main' : 'pick' })
@@ -111,11 +118,15 @@ export function App() {
       if (net === 'offline') void goOnline()
       else if (net === 'online') refreshIfStale() // nouveaux morceaux publiés entre-temps
     }
+    // Perte du réseau en cours d'utilisation : on bascule en mode hors ligne sans attendre.
+    const lost = () => useApp.getState().phase === 'main' && useApp.setState({ net: 'offline' })
     document.addEventListener('visibilitychange', wake)
     window.addEventListener('online', wake)
+    window.addEventListener('offline', lost)
     return () => {
       document.removeEventListener('visibilitychange', wake)
       window.removeEventListener('online', wake)
+      window.removeEventListener('offline', lost)
     }
   }, [])
 
@@ -195,7 +206,7 @@ export function App() {
   return (
     <div className="app">
       <FloodBanner />
-      {net === 'offline' && <div className="banner quiet">Hors ligne — nouvelle tentative au retour du réseau</div>}
+      {net === 'offline' && <div className="banner quiet">Hors ligne — seuls les morceaux gardés sur le téléphone sont lisibles</div>}
       {screen}
       <MiniPlayer />
       <Player />

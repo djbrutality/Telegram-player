@@ -1070,3 +1070,20 @@ input[type='search']::-webkit-search-cancel-button {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* ---------- Étape 4 : hors ligne ---------- */
+.off-mark {
+  color: var(--accent);
+  flex: none;
+  display: grid;
+}
+.offline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 36px;
+}
+.segmented button {
+  white-space: nowrap;
+}

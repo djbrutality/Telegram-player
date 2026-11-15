@@ -3,12 +3,14 @@ import { Icon } from '../components/Icon'
 import { askNewPlaylist } from '../components/TrackMenu'
 import { ROW_HEIGHT, TrackRow } from '../components/TrackRow'
 import { VirtualList } from '../components/VirtualList'
-import { hueOf } from '../lib/format'
+import { formatBytes, hueOf } from '../lib/format'
+import { clearOffline, keepOffline, useOffline } from '../lib/offline'
+import { getTracksByKeys } from '../lib/db'
 import { useTracksByKeys } from '../lib/library'
 import type { Track } from '../lib/types'
 import { deletePlaylist, renamePlaylist, useUser, type Playlist } from '../lib/userdata'
 import { playList, usePlayer } from '../player/player'
-import { useUi } from '../store'
+import { toast, useUi } from '../store'
 
 function TrackList({ keys, context, playlistId, empty }: { keys: string[]; context: string; playlistId?: string; empty: string }) {
   const tracks = useTracksByKeys(keys)
@@ -44,6 +46,44 @@ function TrackList({ keys, context, playlistId, empty }: { keys: string[]; conte
   )
 }
 
+/** Télécharge tous les morceaux d'une liste pour l'écoute hors ligne. */
+async function keepAllOffline(keys: string[]) {
+  const added = keepOffline(await getTracksByKeys(keys))
+  toast(added ? `${added} morceau${added > 1 ? 'x' : ''} à télécharger` : 'Tout est déjà sur le téléphone')
+}
+
+function OfflineList() {
+  const saved = useOffline((s) => s.saved)
+  const current = useOffline((s) => s.current)
+  const waiting = useOffline((s) => s.queue.length)
+  const list = useMemo(() => Object.values(saved).sort((a, b) => b.at - a.at), [saved])
+  const keys = useMemo(() => list.map((m) => m.key), [list])
+  const bytes = list.reduce((n, m) => n + m.size, 0)
+  const wipe = () => {
+    if (confirm(`Retirer les ${list.length} morceaux gardés hors ligne ? Ils resteront disponibles en streaming.`)) void clearOffline()
+  }
+  return (
+    <>
+      <div className="pad offline-bar">
+        <span className="muted small">
+          {list.length} morceau{list.length > 1 ? 'x' : ''} · {formatBytes(bytes)}
+          {current && ` · téléchargement ${Math.round(current.progress * 100)} %${waiting ? ` (+${waiting} en attente)` : ''}`}
+        </span>
+        {list.length > 0 && (
+          <button className="pill" onClick={wipe}>
+            Vider
+          </button>
+        )}
+      </div>
+      <TrackList
+        keys={keys}
+        context="Hors ligne"
+        empty="Aucun morceau gardé hors ligne. Touchez « ⋯ » sur un morceau puis « Garder hors ligne », ou la flèche en haut d’une playlist."
+      />
+    </>
+  )
+}
+
 function PlaylistView({ playlist, onBack }: { playlist: Playlist; onBack: () => void }) {
   const rename = () =>
     useUi.setState({
@@ -71,6 +111,9 @@ function PlaylistView({ playlist, onBack }: { playlist: Playlist; onBack: () => 
             {playlist.keys.length} morceau{playlist.keys.length > 1 ? 'x' : ''}
           </span>
         </div>
+        <button className="icon-btn" onClick={() => void keepAllOffline(playlist.keys)} aria-label="Garder la playlist hors ligne">
+          <Icon name="download" size={22} />
+        </button>
         <button className="icon-btn" onClick={rename} aria-label="Renommer">
           <Icon name="edit" size={21} />
         </button>
@@ -92,9 +135,10 @@ function PlaylistView({ playlist, onBack }: { playlist: Playlist; onBack: () => 
 export function Favorites() {
   const favorites = useUser((s) => s.favorites)
   const playlists = useUser((s) => s.playlists)
-  const [view, setView] = useState<'favs' | 'lists'>('favs')
+  const [view, setView] = useState<'favs' | 'lists' | 'offline'>('favs')
   const [openId, setOpenId] = useState<string | null>(null)
   const favKeys = useMemo(() => favorites.map((f) => f.key), [favorites])
+  const offlineCount = useOffline((s) => Object.keys(s.saved).length)
 
   const open = playlists.find((p) => p.id === openId)
   if (open) return <PlaylistView playlist={open} onBack={() => setOpenId(null)} />
@@ -107,15 +151,30 @@ export function Favorites() {
       <div className="pad">
         <div className="segmented">
           <button className={view === 'favs' ? 'on' : ''} onClick={() => setView('favs')}>
-            Morceaux ({favorites.length})
+            Titres ({favorites.length})
           </button>
           <button className={view === 'lists' ? 'on' : ''} onClick={() => setView('lists')}>
             Playlists ({playlists.length})
           </button>
+          <button className={view === 'offline' ? 'on' : ''} onClick={() => setView('offline')}>
+            Hors ligne ({offlineCount})
+          </button>
         </div>
       </div>
-      {view === 'favs' ? (
-        <TrackList keys={favKeys} context="Favoris" empty="Aucun favori pour l’instant. Touchez le cœur dans le lecteur, ou « ⋯ » sur un morceau." />
+      {view === 'offline' ? (
+        <OfflineList />
+      ) : view === 'favs' ? (
+        <>
+          {favKeys.length > 0 && (
+            <div className="pad offline-bar">
+              <span className="muted small">Vos morceaux préférés</span>
+              <button className="pill" onClick={() => void keepAllOffline(favKeys)}>
+                Tout garder hors ligne
+              </button>
+            </div>
+          )}
+          <TrackList keys={favKeys} context="Favoris" empty="Aucun favori pour l’instant. Touchez le cœur dans le lecteur, ou « ⋯ » sur un morceau." />
+        </>
       ) : (
         <div className="list">
           <button className="pick-row" onClick={() => askNewPlaylist()}>
