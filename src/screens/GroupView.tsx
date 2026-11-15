@@ -1,3 +1,4 @@
+import { ChatAvatar } from '../components/ChatAvatar'
 import { Icon } from '../components/Icon'
 import { ROW_HEIGHT, TrackRow } from '../components/TrackRow'
 import { VirtualList } from '../components/VirtualList'
@@ -62,6 +63,7 @@ export function GroupView({ chatId, onBack }: { chatId: string; onBack: () => vo
         <button className="icon-btn" onClick={onBack} aria-label="Retour">
           <Icon name="back" />
         </button>
+        {chat && <ChatAvatar chat={chat} />}
         <div className="topbar-text">
           <h1 className="small">{chat?.title ?? 'Groupe'}</h1>
           <span className={`track-artist${progress?.error ? ' err' : ''}`}>{progressLabel(progress)}</span>

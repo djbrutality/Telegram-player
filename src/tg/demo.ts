@@ -5,7 +5,7 @@ import { sleep } from '../lib/format'
 import type { Backend } from './backend'
 
 const chats: ChatInfo[] = [
-  { id: '101', kind: 'channel', accessHash: '1', title: 'Vinyles du dimanche', broadcast: true },
+  { id: '101', kind: 'channel', accessHash: '1', title: 'Vinyles du dimanche', broadcast: true, username: 'vinyles_dimanche' },
   { id: '102', kind: 'channel', accessHash: '1', title: 'Électro & nuits blanches', broadcast: false },
   { id: '103', kind: 'chat', title: 'Famille – partages', broadcast: false },
   { id: '104', kind: 'channel', accessHash: '1', title: 'Jazz, soul & autres trésors', broadcast: true },
@@ -95,6 +95,19 @@ export const demoBackend: Backend = {
     g.fillRect(0, 0, 160, 160)
     g.fillStyle = 'rgba(255,255,255,.85)'
     g.beginPath(); g.arc(80, 80, 34, 0, 7); g.fill()
+    return new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.8))
+  },
+  async getChatPhoto(chat) {
+    await sleep(200)
+    if (chat.id === '103') return null
+    const c = document.createElement('canvas')
+    c.width = c.height = 96
+    const g = c.getContext('2d')!
+    const h = (Number(chat.id) * 83) % 360
+    g.fillStyle = `hsl(${h} 60% 45%)`
+    g.fillRect(0, 0, 96, 96)
+    g.fillStyle = `hsl(${(h + 150) % 360} 70% 70%)`
+    g.beginPath(); g.moveTo(48, 14); g.lineTo(84, 80); g.lineTo(12, 80); g.fill()
     return new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.8))
   },
   async saveBackup(json) {

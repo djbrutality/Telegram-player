@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ChatAvatar } from '../components/ChatAvatar'
 import { Icon } from '../components/Icon'
-import { hueOf } from '../lib/format'
+import { chatKind, fold } from '../lib/format'
 import type { ChatInfo } from '../lib/types'
 import { useApp } from '../store'
 import { backend } from '../tg/backend'
@@ -30,8 +31,8 @@ export function ChatPicker({ onDone, onCancel }: { onDone: (chats: ChatInfo[]) =
   }, [attempt])
 
   const shown = useMemo(() => {
-    const q = filter.trim().toLowerCase()
-    return (all ?? []).filter((c) => !q || c.title.toLowerCase().includes(q))
+    const q = fold(filter)
+    return (all ?? []).filter((c) => !q || fold(`${c.title} ${c.username ?? ''}`).includes(q))
   }, [all, filter])
 
   const toggle = (id: string) =>
@@ -78,12 +79,10 @@ export function ChatPicker({ onDone, onCancel }: { onDone: (chats: ChatInfo[]) =
             const on = selected.has(c.id)
             return (
               <button key={c.id} className="pick-row" onClick={() => toggle(c.id)} aria-pressed={on}>
-                <span className="avatar" style={{ background: `hsl(${hueOf(c.title)} 42% 32%)` }}>
-                  {[...c.title.trim()][0]?.toUpperCase() ?? '?'}
-                </span>
+                <ChatAvatar chat={c} />
                 <span className="track-text">
                   <span className="track-title">{c.title}</span>
-                  <span className="track-artist">{c.broadcast ? 'Canal' : 'Groupe'}</span>
+                  <span className="track-artist">{chatKind(c)}</span>
                 </span>
                 <span className={`checkbox${on ? ' on' : ''}`}>{on && <Icon name="check" size={16} />}</span>
               </button>
