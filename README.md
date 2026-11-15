@@ -107,6 +107,7 @@ Ne supprimez pas ce message. Il ne contient ni identifiant ni mot de passe.
 | « Trop de tentatives… » | Telegram impose une attente ; patientez la durée indiquée. |
 | Un morceau ne démarre pas | Réglages → Mode de lecture → **Complet** (télécharge le morceau entier avant de le lire). |
 | « Format audio non pris en charge » | Safari ne sait pas lire ce format (certains fichiers anciens ou exotiques). |
+| Un morceau ancien est introuvable | Le classement « Musique » de Telegram oublie parfois les vieux messages d'un canal. Onde relit donc aussi l'historique ancien, après l'indexation normale (« relecture de l'historique… » dans l'onglet Groupes). Laissez l'appli ouverte le temps que cela se termine. |
 | Bandeau « Telegram demande une pause » | Normal sur les gros groupes : l'indexation reprend toute seule. |
 | La musique s'arrête écran verrouillé | Laissez l'appli ouverte au premier plan quelques secondes après le début d'un morceau (le temps du préchargement), puis verrouillez. Si cela persiste, essayez le mode **Complet**. |
 | L'appli ne se met pas à jour | Fermez-la complètement (balayez-la vers le haut) puis rouvrez-la. |

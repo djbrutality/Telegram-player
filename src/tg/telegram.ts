@@ -127,6 +127,19 @@ async function getFileSafe(track: Track, offset: number, limit: number, thumbSiz
   })
 }
 
+function toPage(chat: ChatInfo, res: { messages: Api.TypeMessage[]; count?: number }): AudioPage {
+  const tracks: Track[] = []
+  let lo = Infinity
+  let hi = 0
+  for (const m of res.messages) {
+    lo = Math.min(lo, m.id)
+    hi = Math.max(hi, m.id)
+    const t = parseTrack(chat, m)
+    if (t) tracks.push(t)
+  }
+  return { tracks, rawCount: res.messages.length, minId: isFinite(lo) ? lo : 0, maxId: hi, total: res.count ?? res.messages.length }
+}
+
 // ---------- Photos de profil des groupes ----------
 
 function photoOf(e: { photo?: Api.TypeChatPhoto }): { photoId?: string; photoDc?: number } {
@@ -404,17 +417,17 @@ export const telegramBackend: Backend = {
     if (res instanceof Api.messages.MessagesNotModified) {
       return { tracks: [], rawCount: 0, minId: 0, maxId: 0, total: 0 }
     }
-    const tracks: Track[] = []
-    let lo = Infinity
-    let hi = 0
-    for (const m of res.messages) {
-      lo = Math.min(lo, m.id)
-      hi = Math.max(hi, m.id)
-      const t = parseTrack(chat, m)
-      if (t) tracks.push(t)
-    }
-    const total = 'count' in res ? res.count : res.messages.length
-    return { tracks, rawCount: res.messages.length, minId: isFinite(lo) ? lo : 0, maxId: hi, total }
+    return toPage(chat, res)
+  },
+
+  async historyPage(chat, offsetId, limit): Promise<AudioPage> {
+    const c = await ready()
+    const res = await call(() =>
+      c.invoke(
+        new Api.messages.GetHistory({ peer: inputPeer(chat), offsetId, offsetDate: 0, addOffset: 0, limit, maxId: 0, minId: 0, hash: bigInt(0) }),
+      ),
+    )
+    return res instanceof Api.messages.MessagesNotModified ? { tracks: [], rawCount: 0, minId: 0, maxId: 0, total: 0 } : toPage(chat, res)
   },
 
   getFile: (track, offset, limit) => getFileSafe(track, offset, limit, ''),
