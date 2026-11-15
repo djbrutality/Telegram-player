@@ -168,6 +168,105 @@ async function getChatPhoto(chat: ChatInfo): Promise<Blob | null> {
   return new Blob([new Uint8Array(res.bytes) as BlobPart], { type: 'image/jpeg' })
 }
 
+// ---------- Diagnostic ----------
+
+const day = (seconds: number) => new Date(seconds * 1000).toISOString().slice(0, 16).replace('T', ' ')
+
+function describe(m: Api.TypeMessage): string {
+  if (!(m instanceof Api.Message)) return `#${m.id} ${m.className}`
+  let text = `#${m.id} ${day(m.date)}`
+  if (m.groupedId) text += ' album'
+  const media = m.media
+  if (!media) return `${text} (texte seul)`
+  text += ` ${media.className}`
+  if (media instanceof Api.MessageMediaDocument) {
+    const doc = media.document
+    if (doc instanceof Api.Document) {
+      text += ` ${doc.mimeType} ${Math.round(doc.size.toJSNumber() / 1024)}Ko [`
+      text += doc.attributes
+        .map((a) => {
+          if (a instanceof Api.DocumentAttributeAudio) return `Audio${a.voice ? ':voix' : ''}(${a.performer ?? '∅'} / ${a.title ?? '∅'})`
+          if (a instanceof Api.DocumentAttributeFilename) return `Fichier(${a.fileName})`
+          return a.className.replace('DocumentAttribute', '')
+        })
+        .join(', ')
+      text += ']'
+    } else text += ` document=${doc?.className ?? '∅'}`
+  }
+  return text
+}
+
+async function diagnose(chat: ChatInfo, query: string, local: { count: number; oldestId: number }) {
+  const c = await ready()
+  const peer = inputPeer(chat)
+  const lines: string[] = []
+  const ids: number[] = []
+  const search = (o: { q?: string; filter: Api.TypeMessagesFilter; offsetId?: number; addOffset?: number; limit: number }) =>
+    call(() =>
+      c.invoke(
+        new Api.messages.Search({
+          peer,
+          q: o.q ?? '',
+          filter: o.filter,
+          minDate: 0,
+          maxDate: 0,
+          offsetId: o.offsetId ?? 0,
+          addOffset: o.addOffset ?? 0,
+          limit: o.limit,
+          maxId: 0,
+          minId: 0,
+          hash: bigInt(0),
+        }),
+      ),
+    )
+  const step = async (label: string, fn: () => Promise<string>) => {
+    try {
+      lines.push(`${label} : ${await fn()}`)
+    } catch (err) {
+      lines.push(`${label} : ERREUR ${(err as { errorMessage?: string; message?: string }).errorMessage ?? (err as Error).message}`)
+    }
+  }
+  const summary = (res: Api.messages.TypeMessages) => {
+    if (res instanceof Api.messages.MessagesNotModified) return 'non modifié'
+    const count = 'count' in res ? res.count : res.messages.length
+    const list = res.messages.map((m) => m.id)
+    return `${res.className.replace('messages.', '')} total=${count} reçus=${list.length}${list.length ? ` ids=${list.slice(0, 6).join(',')}` : ''}`
+  }
+
+  await step('Historique', async () =>
+    summary(
+      await call(() =>
+        c.invoke(new Api.messages.GetHistory({ peer, offsetId: 0, offsetDate: 0, addOffset: 0, limit: 1, maxId: 0, minId: 0, hash: bigInt(0) })),
+      ),
+    ),
+  )
+  await step('Filtre Musique', async () => summary(await search({ filter: new Api.InputMessagesFilterMusic(), limit: 3 })))
+  await step('Filtre Fichiers', async () => summary(await search({ filter: new Api.InputMessagesFilterDocument(), limit: 3 })))
+  await step('Filtre Voix', async () => summary(await search({ filter: new Api.InputMessagesFilterVoice(), limit: 3 })))
+  await step(`Musique après le plus ancien local (#${local.oldestId})`, async () =>
+    summary(await search({ filter: new Api.InputMessagesFilterMusic(), offsetId: local.oldestId, limit: 5 })),
+  )
+  await step(`Musique en sautant ${local.count} résultats`, async () =>
+    summary(await search({ filter: new Api.InputMessagesFilterMusic(), addOffset: local.count, limit: 5 })),
+  )
+  if (query) {
+    await step(`Texte « ${query} » + filtre Musique`, async () => summary(await search({ q: query, filter: new Api.InputMessagesFilterMusic(), limit: 10 })))
+    try {
+      const res = await search({ q: query, filter: new Api.InputMessagesFilterEmpty(), limit: 10 })
+      lines.push(`Texte « ${query} » sans filtre : ${summary(res)}`)
+      if (!(res instanceof Api.messages.MessagesNotModified)) {
+        for (const m of res.messages) {
+          ids.push(m.id)
+          lines.push(`  ${describe(m)}`)
+        }
+      }
+    } catch (err) {
+      lines.push(`Texte sans filtre : ERREUR ${(err as Error).message}`)
+    }
+  }
+  return { lines, ids }
+}
+
 // ---------- Sauvegarde dans « Messages enregistrés » ----------
 
 const BACKUP_TAG = '#onde_sauvegarde'
@@ -255,6 +354,7 @@ async function loadBackup(): Promise<{ json: string; date: number } | null> {
 }
 
 export const telegramBackend: Backend = {
+  diagnose,
   getChatPhoto,
   saveBackup,
   loadBackup,

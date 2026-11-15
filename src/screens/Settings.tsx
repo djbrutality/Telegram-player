@@ -15,7 +15,7 @@ const modes: { id: PlaybackMode; label: string }[] = [
   { id: 'full', label: 'Complet' },
 ]
 
-export function Settings({ onBack, onEditChats }: { onBack: () => void; onEditChats: () => void }) {
+export function Settings({ onBack, onEditChats, onDiagnostic }: { onBack: () => void; onEditChats: () => void; onDiagnostic: () => void }) {
   const me = useApp((s) => s.me)
   const net = useApp((s) => s.net)
   const mode = useApp((s) => s.playbackMode)
@@ -103,6 +103,10 @@ export function Settings({ onBack, onEditChats }: { onBack: () => void; onEditCh
         </button>
         <button className="setting" onClick={reindex}>
           <span>Tout réindexer</span>
+        </button>
+        <button className="setting" onClick={onDiagnostic}>
+          <span>Diagnostic d’un groupe</span>
+          <span className="muted">›</span>
         </button>
       </div>
 
