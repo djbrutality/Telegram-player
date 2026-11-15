@@ -292,6 +292,14 @@ export function seek(seconds: number) {
   saveResume()
 }
 
+/** Avance (ou recule, si négatif) de quelques secondes dans le morceau. */
+export function seekBy(delta: number) {
+  const { position, duration, current } = get()
+  if (!current) return
+  const max = duration > 0 ? Math.max(0, duration - 1) : Infinity
+  seek(Math.min(max, Math.max(0, position + delta)))
+}
+
 export function toggleShuffle() {
   const { shuffle, queue, index, current } = get()
   if (!shuffle) {

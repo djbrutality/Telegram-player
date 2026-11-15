@@ -3,7 +3,7 @@ import { Cover } from '../components/Cover'
 import { Icon } from '../components/Icon'
 import { VirtualList } from '../components/VirtualList'
 import { formatTime, trackArtist, trackTitle } from '../lib/format'
-import { cycleRepeat, jumpTo, next, prev, removeFromQueue, seek, toggle, toggleShuffle, usePlayer } from '../player/player'
+import { cycleRepeat, jumpTo, next, prev, removeFromQueue, seek, seekBy, toggle, toggleShuffle, usePlayer } from '../player/player'
 import { toggleFavorite, useUser } from '../lib/userdata'
 import { openMenu, useUi } from '../store'
 
@@ -38,6 +38,14 @@ function SeekBar() {
       />
       <div className="seek-times">
         <span>{formatTime(value)}</span>
+        <span className="jumps">
+          <button className="icon-btn" onClick={() => seekBy(-10)} aria-label="Reculer de 10 secondes">
+            <Icon name="back10" size={30} />
+          </button>
+          <button className="icon-btn" onClick={() => seekBy(10)} aria-label="Avancer de 10 secondes">
+            <Icon name="fwd10" size={30} />
+          </button>
+        </span>
         <span>{duration > 0 ? formatTime(duration) : '--:--'}</span>
       </div>
     </div>

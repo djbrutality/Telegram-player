@@ -31,6 +31,20 @@ export function Icon({ name, size = 24 }: { name: string; size?: number }) {
       </svg>
     )
   }
+  if (name === 'back10' || name === 'fwd10') {
+    // Flèche circulaire avec « 10 » : saut de dix secondes en arrière ou en avant.
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <g transform={name === 'fwd10' ? 'matrix(-1 0 0 1 24 0)' : undefined}>
+          <path d="M4.6 9.2A8 8 0 1 1 4 12.5" />
+          <path d="M4.2 4.6v4.8H9" />
+        </g>
+        <text x="12" y="15.3" textAnchor="middle" fontSize="6.6" fontWeight="700" fill="currentColor" stroke="none" fontFamily="-apple-system, sans-serif">
+          10
+        </text>
+      </svg>
+    )
+  }
   if (name === 'heart-full') {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
