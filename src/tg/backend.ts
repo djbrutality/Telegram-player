@@ -22,6 +22,8 @@ export interface Backend {
   getThumb(track: Track): Promise<Blob | null>
   /** Photo de profil d'un groupe ou canal (petite taille). */
   getChatPhoto(chat: ChatInfo): Promise<Blob | null>
+  /** Rapport technique sur l'indexation d'un groupe (écran Diagnostic). */
+  diagnose(chat: ChatInfo, query: string, local: { count: number; oldestId: number }): Promise<{ lines: string[]; ids: number[] }>
   /** Envoie la sauvegarde dans « Messages enregistrés » et supprime les anciennes. */
   saveBackup(json: string): Promise<void>
   /** Dernière sauvegarde trouvée dans « Messages enregistrés », ou null. */

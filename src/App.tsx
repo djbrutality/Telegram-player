@@ -10,6 +10,7 @@ import { Dialog } from './components/Dialog'
 import { TrackMenu } from './components/TrackMenu'
 import { applyBackup, hasPendingBackup, markDirty, runBackup } from './lib/backup'
 import { loadUserData } from './lib/userdata'
+import { Diagnostic } from './screens/Diagnostic'
 import { Favorites } from './screens/Favorites'
 import { Restore } from './screens/Restore'
 import { Search } from './screens/Search'
@@ -99,7 +100,7 @@ export function App() {
   const net = useApp((s) => s.net)
   const [tab, setTab] = useState<Tab>('home')
   const [openChat, setOpenChat] = useState<string | null>(null)
-  const [overlay, setOverlay] = useState<'settings' | 'picker' | null>(null)
+  const [overlay, setOverlay] = useState<'settings' | 'picker' | 'diag' | null>(null)
 
   useEffect(() => {
     void boot()
@@ -176,7 +177,9 @@ export function App() {
 
   let screen
   if (overlay === 'settings') {
-    screen = <Settings onBack={() => setOverlay(null)} onEditChats={() => setOverlay('picker')} />
+    screen = <Settings onBack={() => setOverlay(null)} onEditChats={() => setOverlay('picker')} onDiagnostic={() => setOverlay('diag')} />
+  } else if (overlay === 'diag') {
+    screen = <Diagnostic onBack={() => setOverlay('settings')} />
   } else if (tab === 'groups' && openChat) {
     screen = <GroupView chatId={openChat} onBack={() => setOpenChat(null)} />
   } else if (tab === 'groups') {
