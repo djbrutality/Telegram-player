@@ -20,6 +20,8 @@ export interface Backend {
   /** Télécharge `limit` octets à partir de `offset` (multiples de 4096). */
   getFile(track: Track, offset: number, limit: number): Promise<Uint8Array>
   getThumb(track: Track): Promise<Blob | null>
+  /** Photo de profil d'un groupe ou canal (petite taille). */
+  getChatPhoto(chat: ChatInfo): Promise<Blob | null>
   /** Envoie la sauvegarde dans « Messages enregistrés » et supprime les anciennes. */
   saveBackup(json: string): Promise<void>
   /** Dernière sauvegarde trouvée dans « Messages enregistrés », ou null. */

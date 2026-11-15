@@ -97,6 +97,19 @@ export const demoBackend: Backend = {
     g.beginPath(); g.arc(80, 80, 34, 0, 7); g.fill()
     return new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.8))
   },
+  async getChatPhoto(chat) {
+    await sleep(200)
+    if (chat.id === '103') return null
+    const c = document.createElement('canvas')
+    c.width = c.height = 96
+    const g = c.getContext('2d')!
+    const h = (Number(chat.id) * 83) % 360
+    g.fillStyle = `hsl(${h} 60% 45%)`
+    g.fillRect(0, 0, 96, 96)
+    g.fillStyle = `hsl(${(h + 150) % 360} 70% 70%)`
+    g.beginPath(); g.moveTo(48, 14); g.lineTo(84, 80); g.lineTo(12, 80); g.fill()
+    return new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.8))
+  },
   async saveBackup(json) {
     await sleep(400)
     sessionStorage.setItem('demo.backup', JSON.stringify({ json, date: Math.floor(Date.now() / 1000) }))

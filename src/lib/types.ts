@@ -8,6 +8,9 @@ export interface ChatInfo {
   broadcast: boolean
   /** identifiant public (sans @), s'il existe */
   username?: string
+  /** photo de profil (identifiant et centre de données Telegram), si elle existe */
+  photoId?: string
+  photoDc?: number
 }
 
 /** Un fichier audio trouvé dans un groupe. */

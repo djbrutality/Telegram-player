@@ -1,5 +1,6 @@
+import { ChatAvatar } from '../components/ChatAvatar'
 import { Icon } from '../components/Icon'
-import { chatKind, hueOf } from '../lib/format'
+import { chatKind } from '../lib/format'
 import { useApp, type ChatProgress } from '../store'
 
 export function progressLabel(p: ChatProgress | undefined): string {
@@ -29,14 +30,12 @@ export function Groups({ onOpen, onEdit }: { onOpen: (id: string) => void; onEdi
           const ratio = p && !p.complete && p.total > 0 ? p.count / p.total : null
           return (
             <button key={c.id} className="pick-row" onClick={() => onOpen(c.id)}>
-              <span className="avatar" style={{ background: `hsl(${hueOf(c.title)} 42% 32%)` }}>
-                {[...c.title.trim()][0]?.toUpperCase() ?? '?'}
-              </span>
+              <ChatAvatar chat={c} />
               <span className="track-text">
                 <span className="track-title">{c.title}</span>
                 <span className={`track-artist${p?.error ? ' err' : ''}`}>
-                  {p?.error ? '' : `${chatKind(c)} · `}
                   {progressLabel(p)}
+                  {p?.error ? '' : ` · ${chatKind(c)}`}
                 </span>
                 {ratio !== null && (
                   <span className="bar">

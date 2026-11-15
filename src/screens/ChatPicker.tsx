@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ChatAvatar } from '../components/ChatAvatar'
 import { Icon } from '../components/Icon'
-import { chatKind, fold, hueOf } from '../lib/format'
+import { chatKind, fold } from '../lib/format'
 import type { ChatInfo } from '../lib/types'
 import { useApp } from '../store'
 import { backend } from '../tg/backend'
@@ -78,9 +79,7 @@ export function ChatPicker({ onDone, onCancel }: { onDone: (chats: ChatInfo[]) =
             const on = selected.has(c.id)
             return (
               <button key={c.id} className="pick-row" onClick={() => toggle(c.id)} aria-pressed={on}>
-                <span className="avatar" style={{ background: `hsl(${hueOf(c.title)} 42% 32%)` }}>
-                  {[...c.title.trim()][0]?.toUpperCase() ?? '?'}
-                </span>
+                <ChatAvatar chat={c} />
                 <span className="track-text">
                   <span className="track-title">{c.title}</span>
                   <span className="track-artist">{chatKind(c)}</span>

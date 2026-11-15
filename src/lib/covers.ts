@@ -1,6 +1,6 @@
 // Pochettes : téléchargées à la demande (2 à la fois), puis gardées sur le téléphone.
 import { getCover, putCover } from './db'
-import type { Track } from './types'
+import type { ChatInfo, Track } from './types'
 import { backend } from '../tg/backend'
 
 const urls = new Map<string, string | null>()
@@ -52,4 +52,37 @@ export function coverUrl(track: Track): Promise<string | null> {
 export async function coverBlob(track: Track): Promise<Blob | undefined> {
   await coverUrl(track)
   return getCover(track.key)
+}
+
+// ---------- Photos de profil des groupes ----------
+
+const chatKey = (c: ChatInfo) => `chat_${c.id}_${c.photoId ?? 'x'}`
+
+export function cachedChatPhotoUrl(chat: ChatInfo): string | null | undefined {
+  return urls.get(chatKey(chat))
+}
+
+export function chatPhotoUrl(chat: ChatInfo): Promise<string | null> {
+  const key = chatKey(chat)
+  if (urls.has(key)) return Promise.resolve(urls.get(key)!)
+  let p = pending.get(key)
+  if (!p) {
+    p = (async () => {
+      let blob = await getCover(key)
+      if (!blob) {
+        const fetched = await slot(async () => (await backend()).getChatPhoto(chat))
+        if (fetched) {
+          blob = fetched
+          await putCover(key, fetched)
+        }
+      }
+      const url = blob ? URL.createObjectURL(blob) : null
+      urls.set(key, url)
+      return url
+    })()
+      .catch(() => null)
+      .finally(() => pending.delete(key))
+    pending.set(key, p)
+  }
+  return p
 }

@@ -127,6 +127,47 @@ async function getFileSafe(track: Track, offset: number, limit: number, thumbSiz
   })
 }
 
+// ---------- Photos de profil des groupes ----------
+
+function photoOf(e: { photo?: Api.TypeChatPhoto }): { photoId?: string; photoDc?: number } {
+  return e.photo instanceof Api.ChatPhoto ? { photoId: e.photo.photoId.toString(), photoDc: e.photo.dcId } : {}
+}
+
+async function getChatPhoto(chat: ChatInfo): Promise<Blob | null> {
+  const c = await ready()
+  let { photoId, photoDc } = chat
+  if (!photoId) {
+    // Groupe enregistré avant cette fonctionnalité : on redemande ses informations à Telegram.
+    const res = await call(() =>
+      chat.kind === 'channel'
+        ? c.invoke(
+            new Api.channels.GetChannels({
+              id: [new Api.InputChannel({ channelId: bigInt(chat.id), accessHash: bigInt(chat.accessHash || '0') })],
+            }),
+          )
+        : c.invoke(new Api.messages.GetChats({ id: [bigInt(chat.id)] })),
+    )
+    const entity = res.chats[0]
+    if (entity instanceof Api.Channel || entity instanceof Api.Chat) ({ photoId, photoDc } = photoOf(entity))
+  }
+  if (!photoId || !photoDc) return null
+  const request = new Api.upload.GetFile({
+    location: new Api.InputPeerPhotoFileLocation({ peer: inputPeer(chat), photoId: bigInt(photoId), big: false }),
+    offset: bigInt(0),
+    limit: 512 * 1024,
+  })
+  const res = await call(async () => {
+    try {
+      return await c.invokeWithSender(request, await c.getSender(photoDc!))
+    } catch (err) {
+      if (!(err instanceof FileMigrateError)) throw err
+      return c.invokeWithSender(request, await c.getSender(err.newDc))
+    }
+  })
+  if (!(res instanceof Api.upload.File) || !res.bytes.length) return null
+  return new Blob([new Uint8Array(res.bytes) as BlobPart], { type: 'image/jpeg' })
+}
+
 // ---------- Sauvegarde dans « Messages enregistrés » ----------
 
 const BACKUP_TAG = '#onde_sauvegarde'
@@ -214,6 +255,7 @@ async function loadBackup(): Promise<{ json: string; date: number } | null> {
 }
 
 export const telegramBackend: Backend = {
+  getChatPhoto,
   saveBackup,
   loadBackup,
 
@@ -231,9 +273,10 @@ export const telegramBackend: Backend = {
           title: e.title,
           broadcast: !!e.broadcast,
           username: e.username ?? e.usernames?.find((u) => u.active)?.username ?? undefined,
+          ...photoOf(e),
         })
       } else if (e instanceof Api.Chat && !e.deactivated && !e.left && !e.migratedTo) {
-        out.push({ id: e.id.toString(), kind: 'chat', title: e.title, broadcast: false })
+        out.push({ id: e.id.toString(), kind: 'chat', title: e.title, broadcast: false, ...photoOf(e) })
       }
     }
     return out
