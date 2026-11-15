@@ -92,7 +92,7 @@ export function Settings({ onBack, onEditChats }: { onBack: () => void; onEditCh
           <span>{busy ? 'Déconnexion…' : 'Se déconnecter et tout effacer'}</span>
         </button>
       </div>
-      <p className="muted small center pad">Onde · étape 1</p>
+      <p className="muted small center pad">Onde · étape 2</p>
     </div>
   )
 }

@@ -42,7 +42,7 @@ export function Home({ onSettings, onGroups }: { onSettings: () => void; onGroup
       )}
       <div className="list">
         {recent?.map((t, i) => (
-          <TrackRow key={t.key} track={t} active={t.key === currentKey} playing={playing} onPlay={() => playList(recent, i)} />
+          <TrackRow key={t.key} track={t} active={t.key === currentKey} playing={playing} onPlay={() => playList(recent, i, 'Derniers ajouts')} />
         ))}
       </div>
     </div>

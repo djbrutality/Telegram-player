@@ -122,3 +122,10 @@ export async function wipeEverything() {
   sessionStorage.clear()
   if ('caches' in window) for (const name of await caches.keys()) await caches.delete(name)
 }
+
+/** Relit plusieurs morceaux d'un coup, dans l'ordre demandé (les absents sont ignorés). */
+export async function getTracksByKeys(keys: string[]): Promise<Track[]> {
+  const tx = (await db()).transaction('tracks')
+  const found = await Promise.all(keys.map((k) => tx.store.get(k)))
+  return found.filter((t): t is Track => !!t)
+}
