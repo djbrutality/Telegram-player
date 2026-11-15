@@ -183,6 +183,32 @@ export function playList(tracks: Track[], index: number, context: string | null 
   load(get().queue[get().index])
 }
 
+/** Nombre maximal de morceaux mis en file depuis une très longue liste. */
+export const QUEUE_WINDOW = 1500
+
+/**
+ * Lance un morceau tout de suite, puis construit la file autour de lui en arrière-plan.
+ * Utilisé pour les très longues listes (un groupe de 170 000 morceaux, par exemple).
+ */
+export function playLazy(
+  first: Track,
+  context: string | null,
+  loadRest: (shuffle: boolean) => Promise<{ tracks: Track[]; index: number }>,
+) {
+  baseQueue = null
+  set({ queue: [first], index: 0, context })
+  load(first)
+  loadRest(get().shuffle)
+    .then(({ tracks, index }) => {
+      const s = get()
+      // Si l'utilisateur est déjà passé à autre chose, on ne touche à rien.
+      if (s.current?.key !== first.key || s.queue.length !== 1 || index < 0) return
+      set({ queue: tracks, index })
+      scheduleWarm()
+    })
+    .catch(() => {})
+}
+
 export function toggle() {
   const s = get()
   if (!s.current) return

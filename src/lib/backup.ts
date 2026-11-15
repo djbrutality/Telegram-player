@@ -4,6 +4,7 @@ import { backend } from '../tg/backend'
 import { frenchError } from '../tg/client'
 import { create } from 'zustand'
 import { getSelectedChats, setSelectedChats } from './db'
+import { resetSearchIndex } from './searchIndex'
 import type { ChatInfo } from './types'
 import { onUserDataChange, replaceUserData, snapshot, type UserData } from './userdata'
 import { useApp } from '../store'
@@ -87,6 +88,7 @@ export async function applyBackup(data: BackupFile) {
   const chats = data.chats.filter((c) => c && typeof c.id === 'string' && typeof c.title === 'string')
   await setSelectedChats(chats)
   replaceUserData(data)
+  resetSearchIndex()
   localStorage.removeItem(K_DIRTY)
   localStorage.setItem(K_LAST, String(data.savedAt))
   useBackup.setState({ last: data.savedAt, status: 'idle', error: null })

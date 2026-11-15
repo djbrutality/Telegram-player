@@ -38,7 +38,12 @@ export function hueOf(text: string): number {
 
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
-/** Texte simplifié pour la recherche : minuscules, sans accents. */
+/** Texte simplifié pour la recherche : minuscules, sans accents ni ponctuation. */
 export function fold(text: string): string {
-  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
 }

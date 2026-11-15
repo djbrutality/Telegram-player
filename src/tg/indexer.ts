@@ -3,6 +3,7 @@
 // si l'appli est fermée en cours de route, on reprend là où on s'était arrêté.
 import { getIndexState, putIndexState, putTracks, deleteChatData } from '../lib/db'
 import { sleep } from '../lib/format'
+import { addToSearchIndex, resetSearchIndex } from '../lib/searchIndex'
 import type { ChatInfo, IndexState } from '../lib/types'
 import { bumpLibrary, setProgress, useApp } from '../store'
 import { backend } from './backend'
@@ -13,6 +14,12 @@ const PAUSE_MS = 350 // petite pause entre deux pages pour ménager Telegram
 
 let generation = 0
 let running = false
+let lastRun = 0
+
+/** Au retour dans l'appli : cherche les nouveautés si la dernière vérification date de plus de 10 minutes. */
+export function refreshIfStale() {
+  if (!running && Date.now() - lastRun > 10 * 60 * 1000) startIndexing()
+}
 
 /** (Re)lance l'indexation de tous les groupes choisis. */
 export function startIndexing() {
@@ -30,6 +37,7 @@ export async function reindexAll() {
     await deleteChatData(c.id)
     setProgress(c.id, { count: 0, total: 0, complete: false, error: undefined })
   }
+  resetSearchIndex()
   bumpLibrary(true)
   startIndexing()
 }
@@ -53,6 +61,7 @@ async function loop() {
     } while (gen !== generation)
   } finally {
     running = false
+    lastRun = Date.now()
     bumpLibrary(true)
   }
 }
@@ -84,6 +93,7 @@ async function indexChat(chat: ChatInfo, cancelled: () => boolean) {
       const page = await api.searchAudio(chat, { offsetId, minId: state.newestId, limit: PAGE })
       if (page.rawCount === 0) break
       await putTracks(page.tracks)
+      addToSearchIndex(page.tracks)
       state.count += page.tracks.length
       state.total = Math.max(state.total, state.count)
       top = Math.max(top, page.maxId)
@@ -102,6 +112,7 @@ async function indexChat(chat: ChatInfo, cancelled: () => boolean) {
       state.complete = true
     } else {
       await putTracks(page.tracks)
+      addToSearchIndex(page.tracks)
       state.count += page.tracks.length
       state.total = Math.max(page.total, state.count)
       state.oldestId = page.minId
